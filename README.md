@@ -74,6 +74,49 @@ response = api.custom_request(method, data)
 print(response)
 ```
 
+## XML Rate Methods (No Authentication Required)
+
+These methods don't require API keys and are perfect for mass operations with local caching:
+
+```python
+from fixedfloatapi import FixedFloatApi
+
+# You can create an instance without API keys for XML methods
+api = FixedFloatApi(key=None, secret=None)
+
+# Get fixed exchange rates (parsed as Python list)
+fixed_rates = api.get_rates_fixed_xml(parse=True)
+print(f"Found {len(fixed_rates)} fixed rate pairs")
+for rate in fixed_rates[:3]:  # Show first 3 rates
+    print(f"{rate['from']} -> {rate['to']}: {rate['out']} (min: {rate['minamount']})")
+
+# Get floating exchange rates (parsed as Python list)  
+float_rates = api.get_rates_float_xml(parse=True)
+print(f"Found {len(float_rates)} floating rate pairs")
+
+# Get raw XML if you prefer to parse it yourself
+raw_xml = api.get_rates_fixed_xml(parse=False)
+print("Raw XML length:", len(raw_xml))
+
+# Example rate data structure:
+# {
+#     'from': 'BTC',
+#     'to': 'ETH', 
+#     'in': 1.0,
+#     'out': 17.720391807658,
+#     'amount': 191.11148571181,
+#     'tofee': '0.0004967000 ETH',
+#     'minamount': '0.0004896204 BTC',
+#     'maxamount': '1.5160672800 BTC'
+# }
+```
+
+**Recommended usage for XML methods:**
+- Cache the results locally with TTL of 5-10 minutes
+- Use for displaying available exchange pairs and rates
+- Perfect for building rate comparison tools
+- No rate limiting (unlimited requests)
+
 For more information, see the [API documentation](https://fixedfloat.com/api)
 
 
