@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  crypto-exchange-api:
+    build: .
+    ports:
+      - "12000:12000"
+    environment:
+      - FIXEDFLOAT_API_KEY=${FIXEDFLOAT_API_KEY}
+      - FIXEDFLOAT_API_SECRET=${FIXEDFLOAT_API_SECRET}
+      - HOST=0.0.0.0
+      - PORT=12000
+      - DEBUG=false
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - .env:/app/.env:ro
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - crypto-exchange-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - crypto-exchange-network
+    command: redis-server --appendonly yes
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - crypto-exchange-api
+    restart: unless-stopped
+    networks:
+      - crypto-exchange-network
+
+volumes:
+  redis_data:
+
+networks:
+  crypto-exchange-network:
+    driver: bridge
