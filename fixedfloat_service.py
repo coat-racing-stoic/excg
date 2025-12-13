@@ -9,20 +9,23 @@ import xml.etree.ElementTree as ET
 from config import settings
 from models import *
 from partner_system import partner_system
+from logging_config import get_logger
 
 class FixedFloatService:
     """Service for interacting with FixedFloat API"""
     
     def __init__(self):
+        self.logger = get_logger('fixedfloat')
         self.api = None
         if settings.fixedfloat_api_key and settings.fixedfloat_api_secret:
             self.api = FixedFloatApi(
                 key=settings.fixedfloat_api_key,
-                secret=settings.fixedfloat_api_secret
+                secret=settings.fixedfloat_api_secret,
+                logger=self.logger
             )
         
         # For XML endpoints, we don't need authentication
-        self.xml_api = FixedFloatApi(key=None, secret=None)
+        self.xml_api = FixedFloatApi(key=None, secret=None, logger=self.logger)
     
     def _ensure_api_configured(self):
         """Ensure API is configured with credentials"""

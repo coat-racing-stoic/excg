@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 import time
 import json
+import logging
 from datetime import datetime
 from typing import List, Optional
 
@@ -12,6 +13,12 @@ from auth import get_current_api_key
 from rate_limiter import check_rate_limit_middleware, get_rate_limit_headers
 from fixedfloat_service import fixedfloat_service
 from partner_system import partner_system
+from logging_config import LoggingConfig, get_logger, log_error
+from logging_middleware import LoggingMiddleware, RequestContextMiddleware, get_request_logger, get_request_id
+
+# Initialize logging
+logging_config = LoggingConfig(log_dir=settings.log_dir, debug=settings.debug)
+logging_config.setup_logging()
 
 # Create FastAPI app
 app = FastAPI(
@@ -22,6 +29,10 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# Add logging middleware (first to catch all requests)
+app.add_middleware(LoggingMiddleware)
+app.add_middleware(RequestContextMiddleware)
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -30,6 +41,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Get logger
+logger = get_logger('app')
 
 # Health check endpoint
 @app.get("/health", response_model=HealthResponse)
@@ -450,26 +464,65 @@ from fastapi.responses import JSONResponse
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """Handle HTTP exceptions"""
+    """Handle HTTP exceptions with logging"""
+    request_logger = get_request_logger(request)
+    request_id = get_request_id(request)
+    
+    # Логируем HTTP исключения
+    request_logger.warning(
+        f"HTTP Exception: {exc.status_code} - {exc.detail}",
+        extra={
+            'request_id': request_id,
+            'status_code': exc.status_code,
+            'error_type': 'HTTPException',
+            'error_details': str(exc.detail),
+            'endpoint': request.url.path,
+            'method': request.method,
+            'event_type': 'http_exception'
+        }
+    )
+    
     return JSONResponse(
         status_code=exc.status_code,
         content={
             "code": exc.status_code,
             "msg": str(exc.detail),
             "data": None
-        }
+        },
+        headers={"X-Request-ID": request_id}
     )
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """Handle general exceptions"""
+    """Handle general exceptions with detailed logging"""
+    request_logger = get_request_logger(request)
+    request_id = get_request_id(request)
+    
+    # Логируем общие исключения с полной трассировкой
+    log_error(
+        request_logger,
+        error=exc,
+        request_id=request_id,
+        context={
+            'endpoint': request.url.path,
+            'method': request.method,
+            'client_ip': request.client.host if request.client else 'unknown',
+            'user_agent': request.headers.get('user-agent', 'unknown'),
+            'api_key': request.headers.get('x-api-key', 'none')[:8] + '...' if request.headers.get('x-api-key') else None
+        }
+    )
+    
     return JSONResponse(
         status_code=500,
         content={
             "code": 500,
-            "msg": f"Internal server error: {str(exc)}",
-            "data": None
-        }
+            "msg": "Internal server error",
+            "data": {
+                "error": "An unexpected error occurred",
+                "request_id": request_id
+            }
+        },
+        headers={"X-Request-ID": request_id}
     )
 
 if __name__ == "__main__":

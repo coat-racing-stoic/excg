@@ -27,6 +27,16 @@ class Settings(BaseSettings):
     rate_limit_create_order_weight: int = int(os.getenv("RATE_LIMIT_CREATE_ORDER_WEIGHT", "50"))
     rate_limit_default_weight: int = int(os.getenv("RATE_LIMIT_DEFAULT_WEIGHT", "1"))
     
+    # Logging Configuration
+    log_level: str = os.getenv("LOG_LEVEL", "INFO")
+    log_dir: str = os.getenv("LOG_DIR", "logs")
+    log_api_requests: bool = os.getenv("LOG_API_REQUESTS", "True").lower() == "true"
+    log_api_responses: bool = os.getenv("LOG_API_RESPONSES", "True").lower() == "true"
+    log_fixedfloat_requests: bool = os.getenv("LOG_FIXEDFLOAT_REQUESTS", "True").lower() == "true"
+    log_fixedfloat_responses: bool = os.getenv("LOG_FIXEDFLOAT_RESPONSES", "True").lower() == "true"
+    log_request_data: bool = os.getenv("LOG_REQUEST_DATA", "True").lower() == "true"
+    log_response_data: bool = os.getenv("LOG_RESPONSE_DATA", "False").lower() == "true"  # По умолчанию выключено для безопасности
+    
     class Config:
         env_file = ".env"
 

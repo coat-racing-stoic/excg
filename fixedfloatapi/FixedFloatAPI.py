@@ -3,15 +3,20 @@ import hashlib
 import requests
 import hmac
 import xml.etree.ElementTree as ET
+import time
+import uuid
+from typing import Optional, Dict, Any
 
 class FixedFloatApi:
     RESP_OK = 0
     TYPE_FIXED = 'fixed'
     TYPE_FLOAT = 'float'
 
-    def __init__(self, key, secret):
+    def __init__(self, key, secret, logger=None, request_id=None):
         self.key = key
         self.secret = secret
+        self.logger = logger
+        self.request_id = request_id or str(uuid.uuid4())
 
     def sign(self, data):
         parts = []
@@ -23,29 +28,108 @@ class FixedFloatApi:
 
     def req(self, method, data):
         url = f'https://ff.io/api/v2/{method}'
-
         req = json.dumps(data)
-
+        
         headers = {
             'Content-Type': 'application/json',
             'X-API-KEY': self.key,
             'X-API-SIGN': self.sign(req)
         }
-
-        response = requests.post(url, headers=headers, data=req, verify=True)
-
+        
+        # Логируем запрос
+        start_time = time.time()
+        if self.logger:
+            try:
+                from logging_config import log_fixedfloat_request
+                log_fixedfloat_request(
+                    self.logger,
+                    request_id=self.request_id,
+                    method='POST',
+                    url=url,
+                    request_data=data,
+                    headers=headers
+                )
+            except ImportError:
+                pass
+        
         try:
-            result = response.json()
-        except ValueError:
-            raise Exception(f'Invalid JSON response: {response.content}')
-
-        if response.status_code != 200:
-            raise Exception(f'Request failed with status {response.status_code}: {result.get("msg", "")}')
-
-        if result['code'] != self.RESP_OK:
-            raise Exception(result['msg'], result['code'])
-
-        return result['data']
+            response = requests.post(url, headers=headers, data=req, verify=True)
+            response_time = time.time() - start_time
+            
+            try:
+                result = response.json()
+            except ValueError:
+                error_msg = f'Invalid JSON response: {response.content}'
+                if self.logger:
+                    try:
+                        from logging_config import log_fixedfloat_response
+                        log_fixedfloat_response(
+                            self.logger,
+                            request_id=self.request_id,
+                            method='POST',
+                            url=url,
+                            status_code=response.status_code,
+                            response_time=response_time,
+                            error=error_msg
+                        )
+                    except ImportError:
+                        pass
+                raise Exception(error_msg)
+            
+            # Логируем ответ
+            if self.logger:
+                try:
+                    from logging_config import log_fixedfloat_response
+                    if response.status_code != 200 or result.get('code') != self.RESP_OK:
+                        log_fixedfloat_response(
+                            self.logger,
+                            request_id=self.request_id,
+                            method='POST',
+                            url=url,
+                            status_code=response.status_code,
+                            response_time=response_time,
+                            response_data=result,
+                            error=result.get('msg', 'Unknown error')
+                        )
+                    else:
+                        log_fixedfloat_response(
+                            self.logger,
+                            request_id=self.request_id,
+                            method='POST',
+                            url=url,
+                            status_code=response.status_code,
+                            response_time=response_time,
+                            response_data=result
+                        )
+                except ImportError:
+                    pass
+            
+            if response.status_code != 200:
+                raise Exception(f'Request failed with status {response.status_code}: {result.get("msg", "")}')
+            
+            if result['code'] != self.RESP_OK:
+                raise Exception(result['msg'], result['code'])
+            
+            return result['data']
+            
+        except requests.RequestException as e:
+            response_time = time.time() - start_time
+            error_msg = f'Request exception: {str(e)}'
+            if self.logger:
+                try:
+                    from logging_config import log_fixedfloat_response
+                    log_fixedfloat_response(
+                        self.logger,
+                        request_id=self.request_id,
+                        method='POST',
+                        url=url,
+                        status_code=0,
+                        response_time=response_time,
+                        error=error_msg
+                    )
+                except ImportError:
+                    pass
+            raise Exception(error_msg)
 
     def ccies(self):
         return self.req('ccies', {})
