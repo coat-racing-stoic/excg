@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     rate_limit_create_order_weight: int = int(os.getenv("RATE_LIMIT_CREATE_ORDER_WEIGHT", "50"))
     rate_limit_default_weight: int = int(os.getenv("RATE_LIMIT_DEFAULT_WEIGHT", "1"))
     
+    # Rates Caching Configuration
+    rates_update_interval: int = int(os.getenv("RATES_UPDATE_INTERVAL", "20"))  # Интервал обновления курсов (15-30 сек)
+    rates_cache_ttl: int = int(os.getenv("RATES_CACHE_TTL", "60"))  # TTL кэша курсов (секунды)
+    rates_cache_enabled: bool = os.getenv("RATES_CACHE_ENABLED", "True").lower() == "true"
+    
     # Logging Configuration
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     log_dir: str = os.getenv("LOG_DIR", "logs")

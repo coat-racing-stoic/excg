@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '../FixedFloatApi-Python'))
 
 from fixedfloatapi import FixedFloatApi
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 import httpx
 import xml.etree.ElementTree as ET
 from config import settings
@@ -23,18 +23,47 @@ class FixedFloatService:
                 secret=settings.fixedfloat_api_secret,
                 logger=self.logger
             )
+            self.logger.info(
+                "FixedFloat API initialized with credentials",
+                extra={'event_type': 'service_init', 'has_credentials': True}
+            )
+        else:
+            self.logger.warning(
+                "FixedFloat API initialized without credentials",
+                extra={'event_type': 'service_init', 'has_credentials': False}
+            )
         
         # For XML endpoints, we don't need authentication
         self.xml_api = FixedFloatApi(key=None, secret=None, logger=self.logger)
+        
+        # Кэш курсов (ленивая инициализация)
+        self._rates_cache = None
+    
+    @property
+    def rates_cache(self):
+        """Ленивая инициализация кэша курсов"""
+        if self._rates_cache is None:
+            from redis_cache import rates_cache
+            self._rates_cache = rates_cache
+        return self._rates_cache
     
     def _ensure_api_configured(self):
         """Ensure API is configured with credentials"""
         if not self.api:
+            self.logger.error(
+                "API call attempted without credentials",
+                extra={'event_type': 'api_error', 'error': 'no_credentials'}
+            )
             raise Exception("FixedFloat API credentials not configured")
     
     async def get_currencies(self) -> List[Currency]:
         """Get list of supported currencies"""
         self._ensure_api_configured()
+        
+        self.logger.info(
+            "Fetching currencies list",
+            extra={'event_type': 'api_call', 'method': 'ccies'}
+        )
         
         try:
             data = self.api.ccies()
@@ -56,14 +85,35 @@ class FixedFloatService:
                 )
                 currencies.append(currency)
             
+            self.logger.info(
+                f"Fetched {len(currencies)} currencies",
+                extra={'event_type': 'api_response', 'method': 'ccies', 'count': len(currencies)}
+            )
+            
             return currencies
             
         except Exception as e:
+            self.logger.error(
+                f"Failed to get currencies: {str(e)}",
+                extra={'event_type': 'api_error', 'method': 'ccies', 'error': str(e)}
+            )
             raise Exception(f"Failed to get currencies: {str(e)}")
     
     async def get_exchange_rate(self, request: PriceRequest) -> ExchangeRate:
         """Get exchange rate for currency pair"""
         self._ensure_api_configured()
+        
+        self.logger.info(
+            f"Getting exchange rate {request.fromCcy}->{request.toCcy}",
+            extra={
+                'event_type': 'api_call',
+                'method': 'price',
+                'from_ccy': request.fromCcy,
+                'to_ccy': request.toCcy,
+                'amount': request.amount,
+                'type': request.type.value
+            }
+        )
         
         try:
             # Prepare request data
@@ -133,6 +183,18 @@ class FixedFloatService:
                     )
                     currencies.append(currency)
             
+            self.logger.info(
+                f"Exchange rate fetched: {request.fromCcy}->{request.toCcy}",
+                extra={
+                    'event_type': 'api_response',
+                    'method': 'price',
+                    'from_ccy': request.fromCcy,
+                    'to_ccy': request.toCcy,
+                    'from_amount': from_rate.amount,
+                    'to_amount': to_rate.amount
+                }
+            )
+            
             return ExchangeRate(
                 from_rate=from_rate,
                 to_rate=to_rate,
@@ -141,11 +203,33 @@ class FixedFloatService:
             )
             
         except Exception as e:
+            self.logger.error(
+                f"Failed to get exchange rate: {str(e)}",
+                extra={
+                    'event_type': 'api_error',
+                    'method': 'price',
+                    'from_ccy': request.fromCcy,
+                    'to_ccy': request.toCcy,
+                    'error': str(e)
+                }
+            )
             raise Exception(f"Failed to get exchange rate: {str(e)}")
     
     async def create_order(self, request: CreateOrderRequest) -> Order:
         """Create new exchange order"""
         self._ensure_api_configured()
+        
+        self.logger.info(
+            f"Creating order {request.fromCcy}->{request.toCcy}",
+            extra={
+                'event_type': 'api_call',
+                'method': 'create',
+                'from_ccy': request.fromCcy,
+                'to_ccy': request.toCcy,
+                'amount': request.amount,
+                'type': request.type.value
+            }
+        )
         
         try:
             # Prepare request data
@@ -170,14 +254,46 @@ class FixedFloatService:
             
             # Convert response to our Order model
             order = self._convert_order_data(data)
+            
+            self.logger.info(
+                f"Order created: {order.id}",
+                extra={
+                    'event_type': 'order_created',
+                    'method': 'create',
+                    'order_id': order.id,
+                    'from_ccy': request.fromCcy,
+                    'to_ccy': request.toCcy,
+                    'status': order.status.value
+                }
+            )
+            
             return order
             
         except Exception as e:
+            self.logger.error(
+                f"Failed to create order: {str(e)}",
+                extra={
+                    'event_type': 'api_error',
+                    'method': 'create',
+                    'from_ccy': request.fromCcy,
+                    'to_ccy': request.toCcy,
+                    'error': str(e)
+                }
+            )
             raise Exception(f"Failed to create order: {str(e)}")
     
     async def get_order_status(self, request: OrderStatusRequest) -> Order:
         """Get order status"""
         self._ensure_api_configured()
+        
+        self.logger.info(
+            f"Getting order status: {request.id}",
+            extra={
+                'event_type': 'api_call',
+                'method': 'order',
+                'order_id': request.id
+            }
+        )
         
         try:
             request_data = {
@@ -187,14 +303,44 @@ class FixedFloatService:
             
             data = self.api.order(request_data)
             order = self._convert_order_data(data)
+            
+            self.logger.info(
+                f"Order status fetched: {order.id} - {order.status.value}",
+                extra={
+                    'event_type': 'api_response',
+                    'method': 'order',
+                    'order_id': order.id,
+                    'status': order.status.value
+                }
+            )
+            
             return order
             
         except Exception as e:
+            self.logger.error(
+                f"Failed to get order status: {str(e)}",
+                extra={
+                    'event_type': 'api_error',
+                    'method': 'order',
+                    'order_id': request.id,
+                    'error': str(e)
+                }
+            )
             raise Exception(f"Failed to get order status: {str(e)}")
     
     async def handle_emergency(self, request: EmergencyRequest) -> EmergencyResponse:
         """Handle emergency situation"""
         self._ensure_api_configured()
+        
+        self.logger.warning(
+            f"Handling emergency for order: {request.id}",
+            extra={
+                'event_type': 'api_call',
+                'method': 'emergency',
+                'order_id': request.id,
+                'choice': request.choice.value
+            }
+        )
         
         try:
             request_data = {
@@ -210,6 +356,17 @@ class FixedFloatService:
             
             data = self.api.emergency(request_data)
             
+            self.logger.info(
+                f"Emergency handled for order: {request.id}",
+                extra={
+                    'event_type': 'emergency_handled',
+                    'method': 'emergency',
+                    'order_id': request.id,
+                    'choice': request.choice.value,
+                    'status': data.get('status', 'processed')
+                }
+            )
+            
             return EmergencyResponse(
                 id=request.id,
                 choice=request.choice,
@@ -218,11 +375,29 @@ class FixedFloatService:
             )
             
         except Exception as e:
+            self.logger.error(
+                f"Failed to handle emergency: {str(e)}",
+                extra={
+                    'event_type': 'api_error',
+                    'method': 'emergency',
+                    'order_id': request.id,
+                    'error': str(e)
+                }
+            )
             raise Exception(f"Failed to handle emergency: {str(e)}")
     
     async def set_email(self, request: SetEmailRequest) -> SetEmailResponse:
         """Set email for order notifications"""
         self._ensure_api_configured()
+        
+        self.logger.info(
+            f"Setting email for order: {request.id}",
+            extra={
+                'event_type': 'api_call',
+                'method': 'setEmail',
+                'order_id': request.id
+            }
+        )
         
         try:
             request_data = {
@@ -233,6 +408,16 @@ class FixedFloatService:
             
             data = self.api.setEmail(request_data)
             
+            self.logger.info(
+                f"Email set for order: {request.id}",
+                extra={
+                    'event_type': 'api_response',
+                    'method': 'setEmail',
+                    'order_id': request.id,
+                    'status': data.get('status', 'email_set')
+                }
+            )
+            
             return SetEmailResponse(
                 id=request.id,
                 email=request.email,
@@ -240,11 +425,29 @@ class FixedFloatService:
             )
             
         except Exception as e:
+            self.logger.error(
+                f"Failed to set email: {str(e)}",
+                extra={
+                    'event_type': 'api_error',
+                    'method': 'setEmail',
+                    'order_id': request.id,
+                    'error': str(e)
+                }
+            )
             raise Exception(f"Failed to set email: {str(e)}")
     
     async def get_qr_codes(self, request: QRRequest) -> QRResponse:
         """Get QR codes for order"""
         self._ensure_api_configured()
+        
+        self.logger.info(
+            f"Getting QR codes for order: {request.id}",
+            extra={
+                'event_type': 'api_call',
+                'method': 'qr',
+                'order_id': request.id
+            }
+        )
         
         try:
             request_data = {
@@ -263,34 +466,62 @@ class FixedFloatService:
                 )
                 qr_codes.append(qr_code)
             
+            self.logger.info(
+                f"QR codes fetched for order: {request.id}",
+                extra={
+                    'event_type': 'api_response',
+                    'method': 'qr',
+                    'order_id': request.id,
+                    'qr_count': len(qr_codes)
+                }
+            )
+            
             return QRResponse(qr_codes=qr_codes)
             
         except Exception as e:
+            self.logger.error(
+                f"Failed to get QR codes: {str(e)}",
+                extra={
+                    'event_type': 'api_error',
+                    'method': 'qr',
+                    'order_id': request.id,
+                    'error': str(e)
+                }
+            )
             raise Exception(f"Failed to get QR codes: {str(e)}")
     
-    async def get_fixed_rates_xml(self, parse: bool = True) -> List[XMLRate]:
-        """Get fixed exchange rates from XML endpoint"""
+    async def get_fixed_rates_xml(self, parse: bool = True, use_cache: bool = True) -> Union[List[XMLRate], str]:
+        """
+        Get fixed exchange rates from XML endpoint
+        
+        Args:
+            parse: If True, return parsed XMLRate objects. If False, return raw XML string.
+            use_cache: If True, try to get rates from Redis cache first.
+            
+        Returns:
+            List of XMLRate objects or raw XML string
+        """
         try:
+            # Пробуем получить из кэша (только для parsed данных)
+            if parse and use_cache and settings.rates_cache_enabled:
+                try:
+                    cached_rates = await self.rates_cache.get_fixed_rates()
+                    if cached_rates:
+                        self.logger.debug(
+                            f"Returning {len(cached_rates)} fixed rates from cache",
+                            extra={'event_type': 'cache_hit', 'cache_type': 'fixed'}
+                        )
+                        return self._convert_rates_to_xml_models(cached_rates)
+                except Exception as cache_error:
+                    self.logger.warning(
+                        f"Cache error, falling back to API: {cache_error}",
+                        extra={'event_type': 'cache_fallback', 'error': str(cache_error)}
+                    )
+            
+            # Получаем из API
             if parse:
                 rates_data = self.xml_api.get_rates_fixed_xml(parse=True)
-                xml_rates = []
-                
-                for rate_data in rates_data:
-                    xml_rate = XMLRate(
-                        **{
-                            'from': rate_data.get('from', ''),
-                            'to': rate_data.get('to', ''),
-                            'in': rate_data.get('in', 0.0),
-                            'out': rate_data.get('out', 0.0),
-                            'amount': rate_data.get('amount', 0.0),
-                            'tofee': rate_data.get('tofee'),
-                            'minamount': rate_data.get('minamount'),
-                            'maxamount': rate_data.get('maxamount')
-                        }
-                    )
-                    xml_rates.append(xml_rate)
-                
-                return xml_rates
+                return self._convert_rates_to_xml_models(rates_data)
             else:
                 # Return raw XML
                 return self.xml_api.get_rates_fixed_xml(parse=False)
@@ -298,35 +529,108 @@ class FixedFloatService:
         except Exception as e:
             raise Exception(f"Failed to get fixed rates XML: {str(e)}")
     
-    async def get_float_rates_xml(self, parse: bool = True) -> List[XMLRate]:
-        """Get floating exchange rates from XML endpoint"""
+    async def get_float_rates_xml(self, parse: bool = True, use_cache: bool = True) -> Union[List[XMLRate], str]:
+        """
+        Get floating exchange rates from XML endpoint
+        
+        Args:
+            parse: If True, return parsed XMLRate objects. If False, return raw XML string.
+            use_cache: If True, try to get rates from Redis cache first.
+            
+        Returns:
+            List of XMLRate objects or raw XML string
+        """
         try:
+            # Пробуем получить из кэша (только для parsed данных)
+            if parse and use_cache and settings.rates_cache_enabled:
+                try:
+                    cached_rates = await self.rates_cache.get_float_rates()
+                    if cached_rates:
+                        self.logger.debug(
+                            f"Returning {len(cached_rates)} float rates from cache",
+                            extra={'event_type': 'cache_hit', 'cache_type': 'float'}
+                        )
+                        return self._convert_rates_to_xml_models(cached_rates)
+                except Exception as cache_error:
+                    self.logger.warning(
+                        f"Cache error, falling back to API: {cache_error}",
+                        extra={'event_type': 'cache_fallback', 'error': str(cache_error)}
+                    )
+            
+            # Получаем из API
             if parse:
                 rates_data = self.xml_api.get_rates_float_xml(parse=True)
-                xml_rates = []
-                
-                for rate_data in rates_data:
-                    xml_rate = XMLRate(
-                        **{
-                            'from': rate_data.get('from', ''),
-                            'to': rate_data.get('to', ''),
-                            'in': rate_data.get('in', 0.0),
-                            'out': rate_data.get('out', 0.0),
-                            'amount': rate_data.get('amount', 0.0),
-                            'tofee': rate_data.get('tofee'),
-                            'minamount': rate_data.get('minamount'),
-                            'maxamount': rate_data.get('maxamount')
-                        }
-                    )
-                    xml_rates.append(xml_rate)
-                
-                return xml_rates
+                return self._convert_rates_to_xml_models(rates_data)
             else:
                 # Return raw XML
                 return self.xml_api.get_rates_float_xml(parse=False)
                 
         except Exception as e:
             raise Exception(f"Failed to get float rates XML: {str(e)}")
+    
+    def _convert_rates_to_xml_models(self, rates_data: List[Dict[str, Any]]) -> List[XMLRate]:
+        """Convert raw rates data to XMLRate models"""
+        xml_rates = []
+        for rate_data in rates_data:
+            xml_rate = XMLRate(
+                **{
+                    'from': rate_data.get('from', ''),
+                    'to': rate_data.get('to', ''),
+                    'in': rate_data.get('in', 0.0),
+                    'out': rate_data.get('out', 0.0),
+                    'amount': rate_data.get('amount', 0.0),
+                    'tofee': rate_data.get('tofee'),
+                    'minamount': rate_data.get('minamount'),
+                    'maxamount': rate_data.get('maxamount')
+                }
+            )
+            xml_rates.append(xml_rate)
+        return xml_rates
+    
+    async def get_cached_rate_for_pair(
+        self, 
+        from_currency: str, 
+        to_currency: str, 
+        rate_type: str = "fixed"
+    ) -> Optional[XMLRate]:
+        """
+        Get cached rate for specific currency pair
+        
+        Args:
+            from_currency: Source currency code
+            to_currency: Target currency code
+            rate_type: "fixed" or "float"
+            
+        Returns:
+            XMLRate if found in cache, None otherwise
+        """
+        if not settings.rates_cache_enabled:
+            return None
+            
+        try:
+            rate_data = await self.rates_cache.get_rate_for_pair(
+                from_currency, to_currency, rate_type
+            )
+            if rate_data:
+                return XMLRate(
+                    **{
+                        'from': rate_data.get('from', ''),
+                        'to': rate_data.get('to', ''),
+                        'in': rate_data.get('in', 0.0),
+                        'out': rate_data.get('out', 0.0),
+                        'amount': rate_data.get('amount', 0.0),
+                        'tofee': rate_data.get('tofee'),
+                        'minamount': rate_data.get('minamount'),
+                        'maxamount': rate_data.get('maxamount')
+                    }
+                )
+            return None
+        except Exception as e:
+            self.logger.error(
+                f"Failed to get cached rate for {from_currency}->{to_currency}: {e}",
+                extra={'event_type': 'cache_error', 'error': str(e)}
+            )
+            return None
     
     def _convert_order_data(self, data: Dict[str, Any]) -> Order:
         """Convert FixedFloat order data to our Order model"""

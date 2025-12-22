@@ -1,11 +1,12 @@
 from fastapi import FastAPI, HTTPException, Request, Depends, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from contextlib import asynccontextmanager
 import time
 import json
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from config import settings
 from models import *
@@ -20,13 +21,56 @@ from logging_middleware import LoggingMiddleware, RequestContextMiddleware, get_
 logging_config = LoggingConfig(log_dir=settings.log_dir, debug=settings.debug)
 logging_config.setup_logging()
 
+# Get logger
+logger = get_logger('app')
+
+# Lifespan context manager for startup/shutdown events
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Управление жизненным циклом приложения"""
+    # Startup
+    logger.info("Starting application...")
+    
+    # Запускаем фоновое обновление курсов если кэширование включено
+    if settings.rates_cache_enabled:
+        try:
+            from rates_updater import rates_updater
+            await rates_updater.start()
+            logger.info(
+                f"Rates updater started with {settings.rates_update_interval}s interval",
+                extra={'event_type': 'rates_updater_started'}
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to start rates updater: {e}",
+                extra={'event_type': 'rates_updater_error', 'error': str(e)}
+            )
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down application...")
+    
+    # Останавливаем фоновое обновление курсов
+    if settings.rates_cache_enabled:
+        try:
+            from rates_updater import rates_updater
+            await rates_updater.stop()
+            logger.info("Rates updater stopped", extra={'event_type': 'rates_updater_stopped'})
+        except Exception as e:
+            logger.error(
+                f"Error stopping rates updater: {e}",
+                extra={'event_type': 'rates_updater_error', 'error': str(e)}
+            )
+
 # Create FastAPI app
 app = FastAPI(
     title="Crypto Exchange Backend API",
     description="Backend API for cryptocurrency exchange using FixedFloat",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Add logging middleware (first to catch all requests)
@@ -41,9 +85,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Get logger
-logger = get_logger('app')
 
 # Health check endpoint
 @app.get("/health", response_model=HealthResponse)
@@ -457,6 +498,150 @@ async def get_float_rates_parsed():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get float rates: {str(e)}"
+        )
+
+# Cache management endpoints
+@app.get("/api/cache/status")
+async def get_cache_status():
+    """
+    Get rates cache status
+    
+    Returns information about cached rates including:
+    - Connection status
+    - Number of cached rates
+    - Last update timestamps
+    - TTL remaining
+    
+    Authentication: Not required
+    """
+    try:
+        if not settings.rates_cache_enabled:
+            return {
+                "enabled": False,
+                "message": "Rates caching is disabled"
+            }
+        
+        from redis_cache import rates_cache
+        from rates_updater import rates_updater
+        
+        cache_status = await rates_cache.get_cache_status()
+        updater_status = rates_updater.get_status()
+        
+        return {
+            "enabled": True,
+            "cache": cache_status,
+            "updater": updater_status,
+            "config": {
+                "update_interval_seconds": settings.rates_update_interval,
+                "cache_ttl_seconds": settings.rates_cache_ttl
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get cache status: {str(e)}"
+        )
+
+@app.post("/api/cache/refresh")
+async def refresh_cache():
+    """
+    Force refresh of rates cache
+    
+    Triggers immediate update of both fixed and float rates from FixedFloat API.
+    
+    Authentication: Not required (consider adding auth in production)
+    """
+    try:
+        if not settings.rates_cache_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Rates caching is disabled"
+            )
+        
+        from rates_updater import rates_updater
+        
+        result = await rates_updater.force_update()
+        
+        return {
+            "code": 0,
+            "msg": "Cache refresh completed",
+            "data": result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to refresh cache: {str(e)}"
+        )
+
+@app.get("/api/rates/pair/{from_currency}/{to_currency}")
+async def get_rate_for_pair(
+    from_currency: str,
+    to_currency: str,
+    rate_type: str = "fixed"
+):
+    """
+    Get cached exchange rate for specific currency pair
+    
+    Args:
+        from_currency: Source currency code (e.g., BTC)
+        to_currency: Target currency code (e.g., ETH)
+        rate_type: "fixed" or "float" (default: "fixed")
+    
+    Returns cached rate if available, otherwise fetches from API.
+    
+    Authentication: Not required
+    """
+    try:
+        # Пробуем получить из кэша
+        cached_rate = await fixedfloat_service.get_cached_rate_for_pair(
+            from_currency.upper(),
+            to_currency.upper(),
+            rate_type
+        )
+        
+        if cached_rate:
+            return {
+                "code": 0,
+                "msg": "Success",
+                "data": {
+                    "rate": cached_rate.dict(by_alias=True),
+                    "source": "cache"
+                }
+            }
+        
+        # Если нет в кэше, ищем в полном списке
+        if rate_type == "fixed":
+            rates = await fixedfloat_service.get_fixed_rates_xml(parse=True, use_cache=True)
+        else:
+            rates = await fixedfloat_service.get_float_rates_xml(parse=True, use_cache=True)
+        
+        for rate in rates:
+            rate_dict = rate.dict(by_alias=True)
+            if rate_dict.get('from') == from_currency.upper() and rate_dict.get('to') == to_currency.upper():
+                return {
+                    "code": 0,
+                    "msg": "Success",
+                    "data": {
+                        "rate": rate_dict,
+                        "source": "api"
+                    }
+                }
+        
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Rate for pair {from_currency}->{to_currency} not found"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get rate for pair: {str(e)}"
         )
 
 # Error handlers
