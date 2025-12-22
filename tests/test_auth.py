@@ -135,10 +135,11 @@ class TestAPIKeyAuth:
             from auth import APIKeyAuth
             auth = APIKeyAuth()
             
-            # Mock request without headers
+            # Mock request without headers using a proper mock
             mock_request = MagicMock()
-            mock_request.headers = {}
-            mock_request.headers.get = MagicMock(return_value=None)
+            mock_headers = MagicMock()
+            mock_headers.get = MagicMock(return_value=None)
+            mock_request.headers = mock_headers
             mock_request.url.path = "/api/v2/test"
             mock_request.method = "POST"
             
@@ -287,33 +288,35 @@ class TestGetCurrentApiKey:
     @pytest.mark.asyncio
     async def test_get_current_api_key_success(self):
         """Test get_current_api_key with valid credentials"""
+        # Create valid signature
+        body = ""
+        api_secret = "test_secret"
+        api_key = "test_key"
+        signature = hmac.new(
+            api_secret.encode('utf-8'),
+            body.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+        
         with patch('auth.settings') as mock_settings:
-            mock_settings.fixedfloat_api_key = "test_key"
-            mock_settings.fixedfloat_api_secret = "test_secret"
+            mock_settings.fixedfloat_api_key = api_key
+            mock_settings.fixedfloat_api_secret = api_secret
             
-            # Reload auth module to apply patched settings
-            import importlib
-            import auth
-            importlib.reload(auth)
+            from auth import APIKeyAuth
+            auth_instance = APIKeyAuth()
             
-            # Create valid signature
-            body = ""
-            signature = hmac.new(
-                "test_secret".encode('utf-8'),
-                body.encode('utf-8'),
-                hashlib.sha256
-            ).hexdigest()
-            
-            # Mock request
+            # Mock request with proper headers mock
             mock_request = MagicMock()
-            mock_request.headers.get = MagicMock(side_effect=lambda x: {
-                "X-API-KEY": "test_key",
+            mock_headers = MagicMock()
+            mock_headers.get = MagicMock(side_effect=lambda x: {
+                "X-API-KEY": api_key,
                 "X-API-SIGN": signature
             }.get(x))
+            mock_request.headers = mock_headers
             mock_request.url.path = "/api/v2/test"
             mock_request.method = "POST"
             mock_request.body = AsyncMock(return_value=b"")
             
-            result = await auth.get_current_api_key(mock_request)
+            result = await auth_instance.authenticate(mock_request)
             
-            assert result == "test_key"
+            assert result == api_key
