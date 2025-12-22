@@ -1,0 +1,462 @@
+{
+  "info": {
+    "_postman_id": "crypto-exchange-api-collection",
+    "name": "Crypto Exchange Backend API",
+    "description": "Complete API collection for Crypto Exchange Backend based on FixedFloat API.\n\n## Authentication\nAll authenticated endpoints require:\n- `X-API-KEY`: Your API key\n- `X-API-SIGN`: HMAC-SHA256 signature of the request body\n\n## Rate Limiting\n- 250 weight units per minute\n- Create order: 50 units\n- Other requests: 1 unit\n\n## Setup\n1. Set `base_url` variable to your server URL\n2. Set `api_key` and `api_secret` variables\n3. The pre-request script will automatically generate signatures",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:12000",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "YOUR_API_KEY",
+      "type": "string"
+    },
+    {
+      "key": "api_secret",
+      "value": "YOUR_API_SECRET",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Generate HMAC-SHA256 signature for authenticated requests",
+          "if (pm.request.body && pm.request.body.raw) {",
+          "    const body = pm.request.body.raw;",
+          "    const secret = pm.variables.get('api_secret');",
+          "    ",
+          "    const signature = CryptoJS.HmacSHA256(body, secret).toString();",
+          "    pm.request.headers.add({",
+          "        key: 'X-API-SIGN',",
+          "        value: signature",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Public Endpoints",
+      "description": "Endpoints that don't require authentication",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check if the API server is running and healthy."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"status\": \"healthy\",\n  \"timestamp\": \"2025-12-22T10:30:00.000Z\",\n  \"version\": \"1.0.0\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cache Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cache/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cache", "status"]
+            },
+            "description": "Get the current status of the rates cache and updater."
+          },
+          "response": []
+        },
+        {
+          "name": "Fixed Rates (XML)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/rates/fixed.xml",
+              "host": ["{{base_url}}"],
+              "path": ["rates", "fixed.xml"]
+            },
+            "description": "Get all fixed exchange rates in XML format. No authentication required."
+          },
+          "response": []
+        },
+        {
+          "name": "Float Rates (XML)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/rates/float.xml",
+              "host": ["{{base_url}}"],
+              "path": ["rates", "float.xml"]
+            },
+            "description": "Get all floating exchange rates in XML format. No authentication required."
+          },
+          "response": []
+        },
+        {
+          "name": "Fixed Rates (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/rates/fixed",
+              "host": ["{{base_url}}"],
+              "path": ["api", "rates", "fixed"]
+            },
+            "description": "Get all fixed exchange rates in JSON format. No authentication required."
+          },
+          "response": []
+        },
+        {
+          "name": "Float Rates (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/rates/float",
+              "host": ["{{base_url}}"],
+              "path": ["api", "rates", "float"]
+            },
+            "description": "Get all floating exchange rates in JSON format. No authentication required."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authenticated Endpoints",
+      "description": "Endpoints that require X-API-KEY and X-API-SIGN headers",
+      "item": [
+        {
+          "name": "Get Currencies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-KEY",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/ccies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "ccies"]
+            },
+            "description": "Get list of all supported cryptocurrencies.\n\n**Weight:** 1 unit\n**Authentication:** Required"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"code\": 0,\n  \"msg\": \"Success\",\n  \"data\": [\n    {\n      \"code\": \"BTC\",\n      \"name\": \"Bitcoin\",\n      \"network\": \"BTC\",\n      \"coin\": \"BTC\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Exchange Rate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-KEY",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromCcy\": \"BTC\",\n  \"toCcy\": \"ETH\",\n  \"amount\": 0.1,\n  \"direction\": \"from\",\n  \"type\": \"fixed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/price",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "price"]
+            },
+            "description": "Calculate exchange rate for a currency pair.\n\n**Parameters:**\n- `fromCcy`: Source currency code (e.g., BTC)\n- `toCcy`: Target currency code (e.g., ETH)\n- `amount`: Amount to exchange\n- `direction`: \"from\" or \"to\"\n- `type`: \"fixed\" or \"float\"\n\n**Weight:** 1 unit\n**Authentication:** Required"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"code\": 0,\n  \"msg\": \"Success\",\n  \"data\": {\n    \"exchange_rate\": {\n      \"from_rate\": {\n        \"code\": \"BTC\",\n        \"amount\": \"0.1\",\n        \"rate\": \"29.1347852\"\n      },\n      \"to_rate\": {\n        \"code\": \"ETH\",\n        \"amount\": \"2.9133506\",\n        \"rate\": \"0.0336204\"\n      }\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Exchange Rate (with Partner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-KEY",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromCcy\": \"BTC\",\n  \"toCcy\": \"ETH\",\n  \"amount\": 0.1,\n  \"direction\": \"from\",\n  \"type\": \"fixed\",\n  \"refcode\": \"PARTNER001\",\n  \"afftax\": 2.5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/price",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "price"]
+            },
+            "description": "Calculate exchange rate with partner commission.\n\n**Additional Parameters:**\n- `refcode`: Partner referral code\n- `afftax`: Partner commission percentage (0-100)\n\n**Weight:** 1 unit\n**Authentication:** Required"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-KEY",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromCcy\": \"BTC\",\n  \"toCcy\": \"ETH\",\n  \"amount\": 0.1,\n  \"direction\": \"from\",\n  \"type\": \"fixed\",\n  \"toAddress\": \"0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "create"]
+            },
+            "description": "Create a new exchange order.\n\n**Parameters:**\n- `fromCcy`: Source currency code\n- `toCcy`: Target currency code\n- `amount`: Amount to exchange\n- `direction`: \"from\" or \"to\"\n- `type`: \"fixed\" or \"float\"\n- `toAddress`: Destination wallet address\n\n**Weight:** 50 units\n**Authentication:** Required"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"code\": 0,\n  \"msg\": \"Success\",\n  \"data\": {\n    \"id\": \"ORDER_ID\",\n    \"token\": \"ORDER_TOKEN\",\n    \"status\": \"NEW\",\n    \"from\": {\n      \"code\": \"BTC\",\n      \"amount\": \"0.1\",\n      \"address\": \"bc1q...\"\n    },\n    \"to\": {\n      \"code\": \"ETH\",\n      \"amount\": \"2.91\",\n      \"address\": \"0x742d35...\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Order Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-KEY",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"ORDER_ID\",\n  \"token\": \"ORDER_TOKEN\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/order",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "order"]
+            },
+            "description": "Get the current status of an order.\n\n**Parameters:**\n- `id`: Order ID\n- `token`: Order token\n\n**Weight:** 1 unit\n**Authentication:** Required"
+          },
+          "response": []
+        },
+        {
+          "name": "Emergency Action",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-KEY",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"ORDER_ID\",\n  \"token\": \"ORDER_TOKEN\",\n  \"choice\": \"EXCHANGE\",\n  \"address\": \"0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/emergency",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "emergency"]
+            },
+            "description": "Handle emergency situations for an order.\n\n**Parameters:**\n- `id`: Order ID\n- `token`: Order token\n- `choice`: Action choice (EXCHANGE, REFUND)\n- `address`: Address for refund (if applicable)\n\n**Weight:** 1 unit\n**Authentication:** Required"
+          },
+          "response": []
+        },
+        {
+          "name": "Set Email Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-KEY",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"ORDER_ID\",\n  \"token\": \"ORDER_TOKEN\",\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/setEmail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "setEmail"]
+            },
+            "description": "Subscribe to email notifications for an order.\n\n**Parameters:**\n- `id`: Order ID\n- `token`: Order token\n- `email`: Email address for notifications\n\n**Weight:** 1 unit\n**Authentication:** Required"
+          },
+          "response": []
+        },
+        {
+          "name": "Get QR Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-KEY",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"ORDER_ID\",\n  \"token\": \"ORDER_TOKEN\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/qr",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "qr"]
+            },
+            "description": "Get QR code for the deposit address.\n\n**Parameters:**\n- `id`: Order ID\n- `token`: Order token\n\n**Weight:** 1 unit\n**Authentication:** Required"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Examples",
+      "description": "Examples of error responses",
+      "item": [
+        {
+          "name": "Missing Authentication",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/ccies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "ccies"]
+            },
+            "description": "Example of request without authentication headers."
+          },
+          "response": [
+            {
+              "name": "Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"code\": 401,\n  \"msg\": \"Missing API key\",\n  \"data\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Invalid Signature",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-KEY",
+                "value": "{{api_key}}"
+              },
+              {
+                "key": "X-API-SIGN",
+                "value": "invalid_signature"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v2/ccies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v2", "ccies"]
+            },
+            "description": "Example of request with invalid signature."
+          },
+          "response": [
+            {
+              "name": "Invalid Signature",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"code\": 401,\n  \"msg\": \"Invalid API signature\",\n  \"data\": null\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

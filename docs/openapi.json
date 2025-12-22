@@ -1,0 +1,994 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Crypto Exchange Backend API",
+    "description": "Backend API for cryptocurrency exchange using FixedFloat",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Health check endpoint",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/ccies": {
+      "post": {
+        "summary": "Get Currencies",
+        "description": "Get list of supported currencies\n\nWeight: 1 unit\nAuthentication: Required (X-API-KEY and X-API-SIGN)",
+        "operationId": "get_currencies_api_v2_ccies_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/price": {
+      "post": {
+        "summary": "Get Exchange Rate",
+        "description": "Calculate exchange rate for currency pair\n\nWeight: 1 unit\nAuthentication: Required (X-API-KEY and X-API-SIGN)",
+        "operationId": "get_exchange_rate_api_v2_price_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/create": {
+      "post": {
+        "summary": "Create Order",
+        "description": "Create new exchange order\n\nWeight: 50 units\nAuthentication: Required (X-API-KEY and X-API-SIGN)",
+        "operationId": "create_order_api_v2_create_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/order": {
+      "post": {
+        "summary": "Get Order Status",
+        "description": "Get order status and information\n\nWeight: 1 unit\nAuthentication: Required (X-API-KEY and X-API-SIGN)",
+        "operationId": "get_order_status_api_v2_order_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/emergency": {
+      "post": {
+        "summary": "Handle Emergency",
+        "description": "Handle emergency situation for order\n\nWeight: 1 unit\nAuthentication: Required (X-API-KEY and X-API-SIGN)",
+        "operationId": "handle_emergency_api_v2_emergency_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmergencyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/setEmail": {
+      "post": {
+        "summary": "Set Email Notification",
+        "description": "Set email address for order notifications\n\nWeight: 1 unit\nAuthentication: Required (X-API-KEY and X-API-SIGN)",
+        "operationId": "set_email_notification_api_v2_setEmail_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/qr": {
+      "post": {
+        "summary": "Get Qr Codes",
+        "description": "Get QR codes for order\n\nWeight: 1 unit\nAuthentication: Required (X-API-KEY and X-API-SIGN)",
+        "operationId": "get_qr_codes_api_v2_qr_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QRRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rates/fixed.xml": {
+      "get": {
+        "summary": "Get Fixed Rates Xml",
+        "description": "Get fixed exchange rates in XML format\n\nAuthentication: Not required\nRate limits: Unlimited\nRecommended: Cache locally with TTL 5-10 minutes",
+        "operationId": "get_fixed_rates_xml_rates_fixed_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rates/float.xml": {
+      "get": {
+        "summary": "Get Float Rates Xml",
+        "description": "Get floating exchange rates in XML format\n\nAuthentication: Not required\nRate limits: Unlimited\nRecommended: Cache locally with TTL 5-10 minutes",
+        "operationId": "get_float_rates_xml_rates_float_xml_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rates/fixed": {
+      "get": {
+        "summary": "Get Fixed Rates Parsed",
+        "description": "Get fixed exchange rates in JSON format (parsed from XML)\n\nAuthentication: Not required\nRate limits: Unlimited",
+        "operationId": "get_fixed_rates_parsed_api_rates_fixed_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/XMLRate"
+                  },
+                  "type": "array",
+                  "title": "Response Get Fixed Rates Parsed Api Rates Fixed Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rates/float": {
+      "get": {
+        "summary": "Get Float Rates Parsed",
+        "description": "Get floating exchange rates in JSON format (parsed from XML)\n\nAuthentication: Not required\nRate limits: Unlimited",
+        "operationId": "get_float_rates_parsed_api_rates_float_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/XMLRate"
+                  },
+                  "type": "array",
+                  "title": "Response Get Float Rates Parsed Api Rates Float Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cache/status": {
+      "get": {
+        "summary": "Get Cache Status",
+        "description": "Get rates cache status\n\nReturns information about cached rates including:\n- Connection status\n- Number of cached rates\n- Last update timestamps\n- TTL remaining\n\nAuthentication: Not required",
+        "operationId": "get_cache_status_api_cache_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cache/refresh": {
+      "post": {
+        "summary": "Refresh Cache",
+        "description": "Force refresh of rates cache\n\nTriggers immediate update of both fixed and float rates from FixedFloat API.\n\nAuthentication: Not required (consider adding auth in production)",
+        "operationId": "refresh_cache_api_cache_refresh_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rates/pair/{from_currency}/{to_currency}": {
+      "get": {
+        "summary": "Get Rate For Pair",
+        "description": "Get cached exchange rate for specific currency pair\n\nArgs:\n    from_currency: Source currency code (e.g., BTC)\n    to_currency: Target currency code (e.g., ETH)\n    rate_type: \"fixed\" or \"float\" (default: \"fixed\")\n\nReturns cached rate if available, otherwise fetches from API.\n\nAuthentication: Not required",
+        "operationId": "get_rate_for_pair_api_rates_pair__from_currency___to_currency__get",
+        "parameters": [
+          {
+            "name": "from_currency",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "From Currency"
+            }
+          },
+          {
+            "name": "to_currency",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "To Currency"
+            }
+          },
+          {
+            "name": "rate_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "fixed",
+              "title": "Rate Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BaseResponse": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "Response code (0 = success)"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "Response message"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "Response data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "msg"
+        ],
+        "title": "BaseResponse"
+      },
+      "CreateOrderRequest": {
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExchangeType"
+              }
+            ],
+            "description": "Exchange type: fixed or float"
+          },
+          "fromCcy": {
+            "type": "string",
+            "title": "Fromccy",
+            "description": "Source currency code"
+          },
+          "toCcy": {
+            "type": "string",
+            "title": "Toccy",
+            "description": "Target currency code"
+          },
+          "direction": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Direction"
+              }
+            ],
+            "description": "Direction: from or to"
+          },
+          "amount": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Amount",
+            "description": "Amount to exchange"
+          },
+          "ccies": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ccies",
+            "description": "Include currencies list in response",
+            "default": false
+          },
+          "usd": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usd",
+            "description": "Change amount by USD when limits exceeded",
+            "default": false
+          },
+          "refcode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refcode",
+            "description": "Partner referral code"
+          },
+          "afftax": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Afftax",
+            "description": "Partner commission percentage"
+          },
+          "toAddress": {
+            "type": "string",
+            "title": "Toaddress",
+            "description": "Destination address for receiving funds"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag",
+            "description": "MEMO/Destination Tag if required"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "fromCcy",
+          "toCcy",
+          "direction",
+          "amount",
+          "toAddress"
+        ],
+        "title": "CreateOrderRequest"
+      },
+      "Direction": {
+        "type": "string",
+        "enum": [
+          "from",
+          "to"
+        ],
+        "title": "Direction"
+      },
+      "EmergencyChoice": {
+        "type": "string",
+        "enum": [
+          "EXCHANGE",
+          "REFUND"
+        ],
+        "title": "EmergencyChoice"
+      },
+      "EmergencyRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Order ID"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "Security token"
+          },
+          "choice": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EmergencyChoice"
+              }
+            ],
+            "description": "Emergency action choice"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address",
+            "description": "Refund address (required for REFUND)"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag",
+            "description": "MEMO/Destination Tag for refund"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "token",
+          "choice"
+        ],
+        "title": "EmergencyRequest"
+      },
+      "ExchangeType": {
+        "type": "string",
+        "enum": [
+          "fixed",
+          "float"
+        ],
+        "title": "ExchangeType"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Service status"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp",
+            "description": "Current timestamp"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "API version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "timestamp",
+          "version"
+        ],
+        "title": "HealthResponse"
+      },
+      "OrderStatusRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Order ID"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "Security token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "token"
+        ],
+        "title": "OrderStatusRequest"
+      },
+      "PriceRequest": {
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExchangeType"
+              }
+            ],
+            "description": "Exchange type: fixed or float"
+          },
+          "fromCcy": {
+            "type": "string",
+            "title": "Fromccy",
+            "description": "Source currency code"
+          },
+          "toCcy": {
+            "type": "string",
+            "title": "Toccy",
+            "description": "Target currency code"
+          },
+          "direction": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Direction"
+              }
+            ],
+            "description": "Direction: from or to"
+          },
+          "amount": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Amount",
+            "description": "Amount to exchange"
+          },
+          "ccies": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ccies",
+            "description": "Include currencies list in response",
+            "default": false
+          },
+          "usd": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usd",
+            "description": "Change amount by USD when limits exceeded",
+            "default": false
+          },
+          "refcode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refcode",
+            "description": "Partner referral code"
+          },
+          "afftax": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Afftax",
+            "description": "Partner commission percentage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "fromCcy",
+          "toCcy",
+          "direction",
+          "amount"
+        ],
+        "title": "PriceRequest"
+      },
+      "QRRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Order ID"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "Security token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "token"
+        ],
+        "title": "QRRequest"
+      },
+      "SetEmailRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Order ID"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "Security token"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Email address for notifications"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "token",
+          "email"
+        ],
+        "title": "SetEmailRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "XMLRate": {
+        "properties": {
+          "from": {
+            "type": "string",
+            "title": "From",
+            "description": "Source currency"
+          },
+          "to": {
+            "type": "string",
+            "title": "To",
+            "description": "Target currency"
+          },
+          "in": {
+            "type": "number",
+            "title": "In",
+            "description": "Input amount"
+          },
+          "out": {
+            "type": "number",
+            "title": "Out",
+            "description": "Output amount"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount",
+            "description": "Base amount"
+          },
+          "tofee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tofee",
+            "description": "Fee information"
+          },
+          "minamount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minamount",
+            "description": "Minimum amount"
+          },
+          "maxamount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxamount",
+            "description": "Maximum amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "in",
+          "out",
+          "amount"
+        ],
+        "title": "XMLRate"
+      }
+    }
+  }
+}
