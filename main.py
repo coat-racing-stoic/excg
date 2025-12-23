@@ -86,8 +86,49 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Root endpoint with links to all components
+@app.get("/", tags=["Info"])
+async def root():
+    """
+    Root endpoint with links to all available components
+    """
+    return {
+        "name": "Crypto Exchange Backend API",
+        "version": "1.0.0",
+        "description": "Backend API for cryptocurrency exchange using FixedFloat",
+        "links": {
+            "documentation": {
+                "swagger": "/docs",
+                "redoc": "/redoc",
+                "openapi_json": "/openapi.json"
+            },
+            "health": "/health",
+            "public_endpoints": {
+                "fixed_rates_xml": "/rates/fixed.xml",
+                "float_rates_xml": "/rates/float.xml",
+                "fixed_rates_json": "/api/rates/fixed",
+                "float_rates_json": "/api/rates/float",
+                "cache_status": "/api/cache/status"
+            },
+            "authenticated_endpoints": {
+                "currencies": "POST /api/v2/ccies",
+                "price": "POST /api/v2/price",
+                "create_order": "POST /api/v2/create",
+                "order_status": "POST /api/v2/order",
+                "emergency": "POST /api/v2/emergency",
+                "set_email": "POST /api/v2/setEmail",
+                "qr_codes": "POST /api/v2/qr"
+            }
+        },
+        "authentication": {
+            "type": "HMAC-SHA256",
+            "headers": ["X-API-KEY", "X-API-SIGN"],
+            "docs": "/docs#section/Authentication"
+        }
+    }
+
 # Health check endpoint
-@app.get("/health", response_model=HealthResponse)
+@app.get("/health", response_model=HealthResponse, tags=["Health"])
 async def health_check():
     """Health check endpoint"""
     return HealthResponse(
