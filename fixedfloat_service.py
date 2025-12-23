@@ -683,8 +683,8 @@ class FixedFloatService:
             addressAlt=data['to'].get('addressAlt'),
             tag=data['to'].get('tag'),
             tagName=data['to'].get('tagName'),
-            reqConfirmations=data['to']['reqConfirmations'],
-            maxConfirmations=data['to']['maxConfirmations'],
+            reqConfirmations=data['to'].get('reqConfirmations', 0),
+            maxConfirmations=data['to'].get('maxConfirmations', 0),
             tx=to_tx
         )
         
@@ -705,9 +705,9 @@ class FixedFloatService:
             repeat=data['emergency']['repeat']
         )
         
-        # Handle back currency if exists
+        # Handle back currency if exists and has valid code
         back_currency = None
-        if 'back' in data and data['back']:
+        if 'back' in data and data['back'] and data['back'].get('code'):
             back_tx = Transaction(
                 id=data['back']['tx'].get('id'),
                 amount=data['back']['tx'].get('amount'),
@@ -720,17 +720,17 @@ class FixedFloatService:
             
             back_currency = OrderCurrency(
                 code=data['back']['code'],
-                coin=data['back']['coin'],
-                network=data['back']['network'],
-                name=data['back']['name'],
-                alias=data['back']['alias'],
-                amount=data['back']['amount'],
-                address=data['back']['address'],
+                coin=data['back'].get('coin'),
+                network=data['back'].get('network'),
+                name=data['back'].get('name'),
+                alias=data['back'].get('alias'),
+                amount=data['back'].get('amount'),
+                address=data['back'].get('address'),
                 addressAlt=data['back'].get('addressAlt'),
                 tag=data['back'].get('tag'),
                 tagName=data['back'].get('tagName'),
-                reqConfirmations=data['back']['reqConfirmations'],
-                maxConfirmations=data['back']['maxConfirmations'],
+                reqConfirmations=data['back'].get('reqConfirmations', 0),
+                maxConfirmations=data['back'].get('maxConfirmations', 0),
                 tx=back_tx
             )
         

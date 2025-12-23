@@ -1,0 +1,86 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Logs (will be created at runtime)
+logs/
+*.log
+
+# Documentation (not needed in container)
+docs/
+*.md
+!README.md
+
+# Examples (not needed in container)
+examples/
+
+# Tests (not needed in production)
+tests/
+test_*.py
+pytest.ini
+
+# Docker files (avoid recursive copy)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# SSL certificates (mounted separately)
+ssl/
+
+# Local config files
+.env.local
+.env.development
+*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
