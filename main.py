@@ -69,7 +69,7 @@ app = FastAPI(
     description="Backend API for cryptocurrency exchange using FixedFloat",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc",
+    redoc_url=None,  # Disable default ReDoc, we'll create custom one
     lifespan=lifespan
 )
 
@@ -85,6 +85,32 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Custom ReDoc endpoint with stable version
+from fastapi.responses import HTMLResponse
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    """Custom ReDoc documentation page with stable version"""
+    return HTMLResponse("""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crypto Exchange Backend API - ReDoc</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+    <link rel="shortcut icon" href="https://fastapi.tiangolo.com/img/favicon.png">
+    <style>
+        body { margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    <redoc spec-url="/openapi.json"></redoc>
+    <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+</body>
+</html>
+    """)
 
 # Root endpoint with links to all components
 @app.get("/", tags=["Info"])
