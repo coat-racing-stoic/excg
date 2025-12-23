@@ -104,11 +104,22 @@ async def root():
             },
             "health": "/health",
             "public_endpoints": {
-                "fixed_rates_xml": "/rates/fixed.xml",
-                "float_rates_xml": "/rates/float.xml",
-                "fixed_rates_json": "/api/rates/fixed",
-                "float_rates_json": "/api/rates/float",
-                "cache_status": "/api/cache/status"
+                "rates": {
+                    "fixed_rates_xml": "/rates/fixed.xml",
+                    "float_rates_xml": "/rates/float.xml",
+                    "fixed_rates_json": "/api/rates/fixed",
+                    "float_rates_json": "/api/rates/float",
+                    "rate_for_pair": "/api/rates/pair/{from}/{to}"
+                },
+                "currencies": {
+                    "validate": "/api/currencies/validate/{code}",
+                    "available": "/api/currencies/available?direction=both|send|receive"
+                },
+                "cache": {
+                    "rates_status": "/api/cache/status",
+                    "currencies_status": "/api/cache/currencies",
+                    "refresh": "POST /api/cache/refresh"
+                }
             },
             "authenticated_endpoints": {
                 "currencies": "POST /api/v2/ccies",
@@ -124,6 +135,10 @@ async def root():
             "type": "HMAC-SHA256",
             "headers": ["X-API-KEY", "X-API-SIGN"],
             "docs": "/docs#section/Authentication"
+        },
+        "caching": {
+            "currencies_ttl": "1 hour (3600 seconds)",
+            "rates_ttl": "configurable (default 60 seconds)"
         }
     }
 
@@ -237,6 +252,12 @@ async def get_exchange_rate(
         
     except HTTPException:
         raise
+    except ValueError as e:
+        # Currency validation error
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -287,6 +308,12 @@ async def create_order(
         
     except HTTPException:
         raise
+    except ValueError as e:
+        # Currency validation error
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -542,7 +569,7 @@ async def get_float_rates_parsed():
         )
 
 # Cache management endpoints
-@app.get("/api/cache/status")
+@app.get("/api/cache/status", tags=["Cache"])
 async def get_cache_status():
     """
     Get rates cache status
@@ -582,6 +609,123 @@ async def get_cache_status():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get cache status: {str(e)}"
+        )
+
+@app.get("/api/cache/currencies", tags=["Cache"])
+async def get_currencies_cache_status():
+    """
+    Get currencies validation cache status
+    
+    Returns information about cached currencies including:
+    - Total currencies count
+    - Sendable currencies count
+    - Receivable currencies count
+    - Cache TTL (1 hour)
+    - Last update timestamp
+    
+    Authentication: Not required
+    """
+    try:
+        from currency_validator import currency_validator
+        
+        cache_status = await currency_validator.get_cache_status()
+        
+        return {
+            "code": 0,
+            "msg": "Success",
+            "data": cache_status
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get currencies cache status: {str(e)}"
+        )
+
+@app.get("/api/currencies/validate/{code}", tags=["Currencies"])
+async def validate_currency(code: str):
+    """
+    Validate if a currency code is available
+    
+    Args:
+        code: Currency code to validate (e.g., BTC, ETHETH)
+    
+    Returns:
+        Currency info if valid, error if not found
+    
+    Authentication: Not required
+    """
+    try:
+        from currency_validator import currency_validator
+        
+        currency_info = await currency_validator.get_currency_info(code.upper())
+        
+        if not currency_info:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Currency {code} not found or cache is empty"
+            )
+        
+        return {
+            "code": 0,
+            "msg": "Success",
+            "data": {
+                "code": currency_info.code,
+                "coin": currency_info.coin,
+                "network": currency_info.network,
+                "name": currency_info.name,
+                "sendable": currency_info.send,
+                "receivable": currency_info.recv,
+                "tag": currency_info.tag
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to validate currency: {str(e)}"
+        )
+
+@app.get("/api/currencies/available", tags=["Currencies"])
+async def get_available_currencies(direction: str = "both"):
+    """
+    Get list of available currencies
+    
+    Args:
+        direction: Filter by direction - "send", "receive", or "both" (default)
+    
+    Returns:
+        List of available currency codes
+    
+    Authentication: Not required
+    """
+    try:
+        from currency_validator import currency_validator
+        
+        if direction == "send":
+            currencies = await currency_validator.get_sendable_currencies()
+        elif direction == "receive":
+            currencies = await currency_validator.get_receivable_currencies()
+        else:
+            all_currencies = await currency_validator.get_all_currencies()
+            currencies = [c.code for c in all_currencies]
+        
+        return {
+            "code": 0,
+            "msg": "Success",
+            "data": {
+                "direction": direction,
+                "count": len(currencies),
+                "currencies": sorted(currencies)
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get available currencies: {str(e)}"
         )
 
 @app.post("/api/cache/refresh")

@@ -38,6 +38,9 @@ class FixedFloatService:
         
         # Кэш курсов (ленивая инициализация)
         self._rates_cache = None
+        
+        # Валидатор валют (ленивая инициализация)
+        self._currency_validator = None
     
     @property
     def rates_cache(self):
@@ -47,6 +50,14 @@ class FixedFloatService:
             self._rates_cache = rates_cache
         return self._rates_cache
     
+    @property
+    def currency_validator(self):
+        """Ленивая инициализация валидатора валют"""
+        if self._currency_validator is None:
+            from currency_validator import currency_validator
+            self._currency_validator = currency_validator
+        return self._currency_validator
+    
     def _ensure_api_configured(self):
         """Ensure API is configured with credentials"""
         if not self.api:
@@ -55,6 +66,22 @@ class FixedFloatService:
                 extra={'event_type': 'api_error', 'error': 'no_credentials'}
             )
             raise Exception("FixedFloat API credentials not configured")
+    
+    async def _validate_currency_pair(self, from_ccy: str, to_ccy: str):
+        """Валидация пары валют перед операцией"""
+        is_valid, error_msg = await self.currency_validator.validate_pair(from_ccy, to_ccy)
+        if not is_valid:
+            self.logger.warning(
+                f"Currency pair validation failed: {error_msg}",
+                extra={
+                    'event_type': 'validation_error',
+                    'from_ccy': from_ccy,
+                    'to_ccy': to_ccy,
+                    'error': error_msg
+                }
+            )
+            raise ValueError(error_msg)
+        return True
     
     async def get_currencies(self) -> List[Currency]:
         """Get list of supported currencies"""
@@ -85,6 +112,9 @@ class FixedFloatService:
                 )
                 currencies.append(currency)
             
+            # Обновляем кэш валидатора валют (TTL 1 час)
+            await self.currency_validator.update_currencies(data)
+            
             self.logger.info(
                 f"Fetched {len(currencies)} currencies",
                 extra={'event_type': 'api_response', 'method': 'ccies', 'count': len(currencies)}
@@ -102,6 +132,9 @@ class FixedFloatService:
     async def get_exchange_rate(self, request: PriceRequest) -> ExchangeRate:
         """Get exchange rate for currency pair"""
         self._ensure_api_configured()
+        
+        # Валидация пары валют
+        await self._validate_currency_pair(request.fromCcy, request.toCcy)
         
         self.logger.info(
             f"Getting exchange rate {request.fromCcy}->{request.toCcy}",
@@ -218,6 +251,9 @@ class FixedFloatService:
     async def create_order(self, request: CreateOrderRequest) -> Order:
         """Create new exchange order"""
         self._ensure_api_configured()
+        
+        # Валидация пары валют
+        await self._validate_currency_pair(request.fromCcy, request.toCcy)
         
         self.logger.info(
             f"Creating order {request.fromCcy}->{request.toCcy}",
