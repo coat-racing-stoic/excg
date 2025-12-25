@@ -51,8 +51,8 @@ export function useExchange(): UseExchangeResult {
     try {
       const params: PriceRequest = {
         type: exchangeType,
-        fromCcy: `${fromCurrency.code}${fromCurrency.network}`,
-        toCcy: `${toCurrency.code}${toCurrency.network}`,
+        fromCcy: fromCurrency.code,  // code already contains full identifier (e.g., BTCBTC, USDTARBITRUM)
+        toCcy: toCurrency.code,
         direction: 'from',
         amount: parseFloat(amount),
       };
@@ -84,8 +84,8 @@ export function useExchange(): UseExchangeResult {
     try {
       const params: CreateOrderRequest = {
         type: exchangeType,
-        fromCcy: `${fromCurrency.code}${fromCurrency.network}`,
-        toCcy: `${toCurrency.code}${toCurrency.network}`,
+        fromCcy: fromCurrency.code,  // code already contains full identifier
+        toCcy: toCurrency.code,
         direction: 'from',
         amount: parseFloat(amount),
         toAddress,

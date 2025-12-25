@@ -4,9 +4,8 @@ import { init, isTMA, mockTelegramEnv, emitEvent } from '@tma.js/sdk-react';
 import { App } from './App';
 import './index.css';
 
-// Check if we're in development mode outside Telegram
+// Check if we're in development mode
 const isDev = import.meta.env.DEV;
-const isInTelegram = isTMA();
 
 // Theme params for mock environment
 const themeParams = {
@@ -32,8 +31,8 @@ const noInsets = {
   right: 0,
 } as const;
 
-// Mock Telegram environment for development (v3 format)
-if (isDev && !isInTelegram) {
+// Mock Telegram environment BEFORE checking isTMA() - this is critical for v3
+if (isDev && !isTMA()) {
   mockTelegramEnv({
     launchParams: {
       tgWebAppThemeParams: themeParams,
@@ -84,16 +83,16 @@ if (isDev && !isInTelegram) {
 async function bootstrap() {
   const root = ReactDOM.createRoot(document.getElementById('root')!);
   
-  // In dev mode or in Telegram - show the app
-  const shouldShowApp = isDev || isInTelegram;
-  
-  if (shouldShowApp) {
-    // Initialize TMA SDK
+  // Initialize TMA SDK - after mock is set up, isTMA() should return true
+  if (isTMA()) {
     try {
       init();
+      console.log('✅ TMA SDK initialized');
     } catch (e) {
       console.warn('TMA SDK init failed:', e);
     }
+  } else if (isDev) {
+    console.log('🔧 Running in dev mode without TMA SDK');
   }
   
   root.render(
