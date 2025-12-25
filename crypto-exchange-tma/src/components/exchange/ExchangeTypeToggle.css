@@ -1,0 +1,48 @@
+.exchange-type-toggle {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 14px;
+}
+
+.exchange-type-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.exchange-type-option.active {
+  background: var(--tg-theme-bg-color, #fff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.exchange-type-icon {
+  font-size: 20px;
+}
+
+.exchange-type-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.exchange-type-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.exchange-type-desc {
+  font-size: 11px;
+  color: var(--tg-theme-hint-color, #999);
+}

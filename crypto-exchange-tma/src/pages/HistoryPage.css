@@ -1,0 +1,83 @@
+.history-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.history-loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.history-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.history-empty h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.history-empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--tg-theme-bg-color, #fff);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  font-family: inherit;
+  text-align: left;
+}
+
+.history-item:active {
+  transform: scale(0.98);
+}
+
+.history-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-item-id {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000);
+  font-family: monospace;
+}
+
+.history-item-date {
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.history-item-arrow {
+  font-size: 24px;
+  color: var(--tg-theme-hint-color, #999);
+}

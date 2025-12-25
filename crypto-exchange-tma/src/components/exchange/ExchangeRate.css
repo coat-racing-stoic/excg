@@ -1,0 +1,93 @@
+.exchange-rate {
+  background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.exchange-rate-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.exchange-rate-error {
+  border: 2px solid #ff9800;
+}
+
+.exchange-rate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.exchange-rate-label {
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.exchange-rate-value {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.exchange-rate-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.exchange-rate-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.exchange-rate-currency {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--tg-theme-hint-color, #666);
+}
+
+.exchange-rate-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 152, 0, 0.1);
+  border-radius: 8px;
+}
+
+.exchange-rate-error-text {
+  font-size: 13px;
+  color: #ff9800;
+}
+
+.exchange-rate-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tg-theme-bg-color, #e0e0e0);
+}
+
+.exchange-rate-info-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.exchange-rate-info-item span:first-child {
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.exchange-rate-info-item span:last-child {
+  color: var(--tg-theme-text-color, #000);
+  font-weight: 500;
+}

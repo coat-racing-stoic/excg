@@ -1,0 +1,138 @@
+.currency-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.currency-selector-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.currency-selector-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--tg-theme-bg-color, #fff);
+  border: 2px solid var(--tg-theme-secondary-bg-color, #e0e0e0);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.currency-selector-button:hover:not(:disabled) {
+  border-color: var(--tg-theme-button-color, #2481cc);
+}
+
+.currency-selector-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.currency-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.currency-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.currency-code {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.currency-network {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.currency-placeholder {
+  flex: 1;
+  text-align: left;
+  color: var(--tg-theme-hint-color, #999);
+  font-size: 15px;
+}
+
+.currency-chevron {
+  font-size: 24px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+/* Modal content */
+.currency-search {
+  margin-bottom: 16px;
+}
+
+.currency-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.currency-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
+  text-align: left;
+}
+
+.currency-item:hover {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+}
+
+.currency-item-selected {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+}
+
+.currency-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.currency-name {
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.currency-network-badge {
+  padding: 4px 8px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.currency-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--tg-theme-hint-color, #999);
+}
