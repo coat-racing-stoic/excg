@@ -141,7 +141,18 @@ class APIKeyAuth:
 from config import settings
 
 auth_handler = APIKeyAuth()
-auth_handler.add_api_key(settings.fixedfloat_api_key, settings.fixedfloat_api_secret)
+
+# Add configured API key if available
+if settings.fixedfloat_api_key and settings.fixedfloat_api_secret:
+    auth_handler.add_api_key(settings.fixedfloat_api_key, settings.fixedfloat_api_secret)
+
+# Add demo API key for development mode
+if settings.debug:
+    auth_handler.add_api_key("demo_api_key", "demo_api_secret")
+    logger.info(
+        "Demo API key added for development mode",
+        extra={'event_type': 'demo_key_added'}
+    )
 
 async def get_current_api_key(request: Request) -> str:
     """Dependency to get current authenticated API key"""

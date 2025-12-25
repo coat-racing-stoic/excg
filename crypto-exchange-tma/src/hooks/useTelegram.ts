@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect, useState } from 'react';
 import {
   backButton,
   mainButton,
@@ -11,32 +11,77 @@ import {
   useLaunchParams,
 } from '@tma.js/sdk-react';
 
+// Safe wrapper for components that may not be mounted
+function safeCall<T>(fn: () => T, fallback: T): T {
+  try {
+    return fn();
+  } catch {
+    return fallback;
+  }
+}
+
 export function useTelegram() {
+  // Use camelCase format (true) for launch params
   const launchParams = useLaunchParams(true);
-  const theme = useSignal(themeParams.state);
-  const viewportHeight = useSignal(viewport.height);
-  const isExpanded = useSignal(viewport.isExpanded);
+  
+  // Safe signal access with fallbacks
+  const [theme, setTheme] = useState<Record<string, string>>({});
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+  const [isExpanded, setIsExpanded] = useState(true);
+  
+  // Try to get theme params from signal
+  useEffect(() => {
+    try {
+      if (themeParams.isMounted()) {
+        const state = themeParams.state();
+        if (state) setTheme(state);
+      }
+    } catch {
+      // Use default theme from launch params
+      if (launchParams?.tgWebAppThemeParams) {
+        setTheme(launchParams.tgWebAppThemeParams as Record<string, string>);
+      }
+    }
+  }, [launchParams]);
+  
+  // Try to get viewport info
+  useEffect(() => {
+    try {
+      if (viewport.isMounted()) {
+        setViewportHeight(viewport.height() || window.innerHeight);
+        setIsExpanded(viewport.isExpanded() ?? true);
+      }
+    } catch {
+      // Use window dimensions as fallback
+    }
+  }, []);
   
   // tgWebAppData contains the init data with user info
   const user = useMemo(() => launchParams?.tgWebAppData?.user, [launchParams]);
   
   const showBackButton = useCallback(() => {
-    if (backButton.isMounted()) {
-      backButton.show();
-    }
+    safeCall(() => {
+      if (backButton.isMounted()) {
+        backButton.show();
+      }
+    }, undefined);
   }, []);
   
   const hideBackButton = useCallback(() => {
-    if (backButton.isMounted()) {
-      backButton.hide();
-    }
+    safeCall(() => {
+      if (backButton.isMounted()) {
+        backButton.hide();
+      }
+    }, undefined);
   }, []);
   
   const onBackButtonClick = useCallback((callback: () => void) => {
-    if (backButton.isMounted()) {
-      return backButton.onClick(callback);
-    }
-    return () => {};
+    return safeCall(() => {
+      if (backButton.isMounted()) {
+        return backButton.onClick(callback);
+      }
+      return () => {};
+    }, () => {});
   }, []);
   
   const setMainButton = useCallback((
@@ -44,22 +89,26 @@ export function useTelegram() {
     onClick: () => void,
     options?: { isEnabled?: boolean; isLoading?: boolean }
   ) => {
-    if (mainButton.isMounted()) {
-      mainButton.setParams({ 
-        text, 
-        isVisible: true,
-        isEnabled: options?.isEnabled ?? true,
-        isLoaderVisible: options?.isLoading ?? false,
-      });
-      return mainButton.onClick(onClick);
-    }
-    return () => {};
+    return safeCall(() => {
+      if (mainButton.isMounted()) {
+        mainButton.setParams({ 
+          text, 
+          isVisible: true,
+          isEnabled: options?.isEnabled ?? true,
+          isLoaderVisible: options?.isLoading ?? false,
+        });
+        return mainButton.onClick(onClick);
+      }
+      return () => {};
+    }, () => {});
   }, []);
   
   const hideMainButton = useCallback(() => {
-    if (mainButton.isMounted()) {
-      mainButton.hide();
-    }
+    safeCall(() => {
+      if (mainButton.isMounted()) {
+        mainButton.hide();
+      }
+    }, undefined);
   }, []);
   
   const showPopup = useCallback(async (
@@ -67,39 +116,51 @@ export function useTelegram() {
     message: string,
     buttons?: Array<{ id?: string; type: 'ok' | 'close' | 'cancel' } | { id?: string; type?: 'default' | 'destructive'; text: string }>
   ) => {
-    if (popup.isSupported()) {
-      return popup.show({ 
-        title, 
-        message, 
-        buttons: buttons || [{ type: 'ok' }] 
-      });
+    try {
+      if (popup.isSupported()) {
+        return await popup.open({ 
+          title, 
+          message, 
+          buttons: buttons || [{ type: 'ok' }] 
+        });
+      }
+    } catch {
+      // Fallback to native alert
     }
     alert(`${title}\n${message}`);
     return null;
   }, []);
   
   const vibrate = useCallback((style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' = 'medium') => {
-    if (hapticFeedback.isSupported()) {
-      hapticFeedback.impactOccurred(style);
-    }
+    safeCall(() => {
+      if (hapticFeedback.isSupported()) {
+        hapticFeedback.impactOccurred(style);
+      }
+    }, undefined);
   }, []);
   
   const notificationVibrate = useCallback((type: 'success' | 'warning' | 'error') => {
-    if (hapticFeedback.isSupported()) {
-      hapticFeedback.notificationOccurred(type);
-    }
+    safeCall(() => {
+      if (hapticFeedback.isSupported()) {
+        hapticFeedback.notificationOccurred(type);
+      }
+    }, undefined);
   }, []);
   
   const expandViewport = useCallback(() => {
-    if (viewport.isMounted() && !isExpanded) {
-      viewport.expand();
-    }
+    safeCall(() => {
+      if (viewport.isMounted() && !isExpanded) {
+        viewport.expand();
+      }
+    }, undefined);
   }, [isExpanded]);
   
   const close = useCallback(() => {
-    if (miniApp.isMounted()) {
-      miniApp.close();
-    }
+    safeCall(() => {
+      if (miniApp.isMounted()) {
+        miniApp.close();
+      }
+    }, undefined);
   }, []);
   
   return {

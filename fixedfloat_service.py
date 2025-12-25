@@ -85,7 +85,14 @@ class FixedFloatService:
     
     async def get_currencies(self) -> List[Currency]:
         """Get list of supported currencies"""
-        self._ensure_api_configured()
+        # Use mock data if API is not configured
+        if not self.api:
+            self.logger.info(
+                "Using mock currencies (API not configured)",
+                extra={'event_type': 'mock_data', 'method': 'ccies'}
+            )
+            from mock_data import get_mock_currencies
+            return get_mock_currencies()
         
         self.logger.info(
             "Fetching currencies list",
@@ -131,7 +138,19 @@ class FixedFloatService:
     
     async def get_exchange_rate(self, request: PriceRequest) -> ExchangeRate:
         """Get exchange rate for currency pair"""
-        self._ensure_api_configured()
+        # Use mock data if API is not configured
+        if not self.api:
+            self.logger.info(
+                f"Using mock exchange rate {request.fromCcy}->{request.toCcy}",
+                extra={'event_type': 'mock_data', 'method': 'price'}
+            )
+            from mock_data import get_mock_exchange_rate
+            return get_mock_exchange_rate(
+                request.fromCcy, 
+                request.toCcy, 
+                request.amount, 
+                request.direction.value
+            )
         
         # Валидация пары валют
         await self._validate_currency_pair(request.fromCcy, request.toCcy)
@@ -250,7 +269,23 @@ class FixedFloatService:
     
     async def create_order(self, request: CreateOrderRequest) -> Order:
         """Create new exchange order"""
-        self._ensure_api_configured()
+        # Use mock data if API is not configured
+        if not self.api:
+            self.logger.info(
+                f"Creating mock order {request.fromCcy}->{request.toCcy}",
+                extra={'event_type': 'mock_data', 'method': 'create'}
+            )
+            from mock_data import create_mock_order, store_mock_order
+            order = create_mock_order(
+                request.fromCcy,
+                request.toCcy,
+                request.amount,
+                request.direction.value,
+                request.toAddress,
+                request.tag
+            )
+            store_mock_order(order)
+            return order
         
         # Валидация пары валют
         await self._validate_currency_pair(request.fromCcy, request.toCcy)
@@ -320,7 +355,14 @@ class FixedFloatService:
     
     async def get_order_status(self, request: OrderStatusRequest) -> Order:
         """Get order status"""
-        self._ensure_api_configured()
+        # Use mock data if API is not configured
+        if not self.api:
+            self.logger.info(
+                f"Getting mock order status: {request.id}",
+                extra={'event_type': 'mock_data', 'method': 'order'}
+            )
+            from mock_data import get_mock_order
+            return get_mock_order(request.id, request.token)
         
         self.logger.info(
             f"Getting order status: {request.id}",

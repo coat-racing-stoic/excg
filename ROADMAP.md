@@ -17,6 +17,16 @@
 - Postman коллекция
 - Примеры клиентов на Python, JavaScript, Go, PHP, cURL
 
+✅ **Telegram Mini App (TMA) - Завершено:**
+- React 19 + Vite 7 frontend
+- @tma.js/sdk-react v3 интеграция
+- Mock Telegram environment для разработки
+- API клиент с HMAC-SHA256 подписью
+- Proxy настройка для CORS
+- Интеграция с FixedFloat API (72 валюты)
+- Компоненты: ExchangeForm, CurrencySelector, OrderStatus
+- Хуки: useTelegram, useExchange, useCurrencies
+
 ---
 
 ## 1. Безопасность (Приоритет: Высокий)
@@ -239,4 +249,4 @@
 
 ---
 
-*Последнее обновление: 2025-12-22*
+*Последнее обновление: 2025-12-25*

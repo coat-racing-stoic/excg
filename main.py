@@ -31,6 +31,22 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting application...")
     
+    # Initialize currency validator with mock data if API is not configured
+    if not settings.fixedfloat_api_key or not settings.fixedfloat_api_secret:
+        try:
+            from currency_validator import currency_validator
+            from mock_data import MOCK_CURRENCIES
+            await currency_validator.update_currencies(MOCK_CURRENCIES)
+            logger.info(
+                f"Currency validator initialized with {len(MOCK_CURRENCIES)} mock currencies",
+                extra={'event_type': 'mock_currencies_loaded'}
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to initialize mock currencies: {e}",
+                extra={'event_type': 'mock_currencies_error', 'error': str(e)}
+            )
+    
     # Запускаем фоновое обновление курсов если кэширование включено
     if settings.rates_cache_enabled:
         try:
