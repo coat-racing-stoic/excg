@@ -20,7 +20,7 @@ export function HomePage() {
     amount,
     toAddress,
     exchangeType,
-    rate,
+    previewRate,
     loading,
     error,
     setFromCurrency,
@@ -33,20 +33,20 @@ export function HomePage() {
     submitOrder,
   } = useExchange();
   
-  // Calculate rate when inputs change
+  // Предварительный расчёт курса из кэша при изменении параметров
   useEffect(() => {
     const timer = setTimeout(() => {
       if (fromCurrency && toCurrency && amount) {
         calculateRate();
       }
-    }, 500);
+    }, 500); // debounce 500ms
     
     return () => clearTimeout(timer);
   }, [fromCurrency, toCurrency, amount, exchangeType, calculateRate]);
   
   // Setup main button
   useEffect(() => {
-    const canSubmit = fromCurrency && toCurrency && amount && toAddress && rate && !loading;
+    const canSubmit = fromCurrency && toCurrency && amount && toAddress && previewRate && !loading && !error;
     
     if (canSubmit) {
       const cleanup = setMainButton('Создать обмен', handleSubmit, {
@@ -57,7 +57,7 @@ export function HomePage() {
     } else {
       hideMainButton();
     }
-  }, [fromCurrency, toCurrency, amount, toAddress, rate, loading]);
+  }, [fromCurrency, toCurrency, amount, toAddress, previewRate, loading, error]);
   
   const handleSwap = () => {
     vibrate('light');
@@ -119,7 +119,7 @@ export function HomePage() {
           />
           
           <ExchangeRate
-            rate={rate}
+            previewRate={previewRate}
             fromCurrency={fromCurrency}
             toCurrency={toCurrency}
             isLoading={loading && !!amount}
@@ -144,7 +144,7 @@ export function HomePage() {
           fullWidth
           size="large"
           onClick={handleSubmit}
-          disabled={!fromCurrency || !toCurrency || !amount || !toAddress || !rate || loading}
+          disabled={!fromCurrency || !toCurrency || !amount || !toAddress || !previewRate || loading || !!error}
           loading={loading}
         >
           Создать обмен

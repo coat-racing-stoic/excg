@@ -7,7 +7,6 @@ import {
   themeParams,
   viewport,
   miniApp,
-  useSignal,
   useLaunchParams,
 } from '@tma.js/sdk-react';
 
@@ -34,7 +33,7 @@ export function useTelegram() {
     try {
       if (themeParams.isMounted()) {
         const state = themeParams.state();
-        if (state) setTheme(state);
+        if (state) setTheme(state as Record<string, string>);
       }
     } catch {
       // Use default theme from launch params
@@ -118,7 +117,9 @@ export function useTelegram() {
   ) => {
     try {
       if (popup.isSupported()) {
-        return await popup.open({ 
+        // Use the popup component's open method
+        const popupInstance = popup as unknown as { open: (params: { title: string; message: string; buttons: typeof buttons }) => Promise<string | null> };
+        return await popupInstance.open({ 
           title, 
           message, 
           buttons: buttons || [{ type: 'ok' }] 
