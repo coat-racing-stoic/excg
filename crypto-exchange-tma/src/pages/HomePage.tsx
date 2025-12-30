@@ -2,8 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout, Button, Input } from '../components';
 import { 
-  CurrencySelector, 
-  AmountInput, 
+  CurrencyInput,
   ExchangeRate, 
   ExchangeTypeToggle 
 } from '../components/exchange';
@@ -20,7 +19,7 @@ export function HomePage() {
     amount,
     toAddress,
     exchangeType,
-    rate,
+    previewRate,
     loading,
     error,
     setFromCurrency,
@@ -33,20 +32,20 @@ export function HomePage() {
     submitOrder,
   } = useExchange();
   
-  // Calculate rate when inputs change
+  // Предварительный расчёт курса из кэша при изменении параметров
   useEffect(() => {
     const timer = setTimeout(() => {
       if (fromCurrency && toCurrency && amount) {
         calculateRate();
       }
-    }, 500);
+    }, 500); // debounce 500ms
     
     return () => clearTimeout(timer);
   }, [fromCurrency, toCurrency, amount, exchangeType, calculateRate]);
   
   // Setup main button
   useEffect(() => {
-    const canSubmit = fromCurrency && toCurrency && amount && toAddress && rate && !loading;
+    const canSubmit = fromCurrency && toCurrency && amount && toAddress && previewRate && !loading && !error;
     
     if (canSubmit) {
       const cleanup = setMainButton('Создать обмен', handleSubmit, {
@@ -57,7 +56,7 @@ export function HomePage() {
     } else {
       hideMainButton();
     }
-  }, [fromCurrency, toCurrency, amount, toAddress, rate, loading]);
+  }, [fromCurrency, toCurrency, amount, toAddress, previewRate, loading, error]);
   
   const handleSwap = () => {
     vibrate('light');
@@ -90,36 +89,36 @@ export function HomePage() {
         />
         
         <div className="exchange-form">
-          <CurrencySelector
+          <CurrencyInput
             label="Отправляете"
+            amount={amount}
+            onAmountChange={setAmount}
             currencies={sendCurrencies}
-            selected={fromCurrency}
-            onSelect={setFromCurrency}
+            selectedCurrency={fromCurrency}
+            onCurrencySelect={setFromCurrency}
             disabled={currenciesLoading}
-          />
-          
-          <AmountInput
-            value={amount}
-            onChange={setAmount}
-            currency={fromCurrency}
-            label="Сумма"
-            disabled={!fromCurrency}
+            minAmount={previewRate?.minAmount ? parseFloat(previewRate.minAmount) : undefined}
+            maxAmount={previewRate?.maxAmount ? parseFloat(previewRate.maxAmount) : undefined}
           />
           
           <button className="swap-button" onClick={handleSwap}>
             <span className="swap-icon">⇅</span>
           </button>
           
-          <CurrencySelector
+          <CurrencyInput
             label="Получаете"
+            amount={previewRate?.toAmount || ''}
+            onAmountChange={() => {}}
             currencies={receiveCurrencies}
-            selected={toCurrency}
-            onSelect={setToCurrency}
+            selectedCurrency={toCurrency}
+            onCurrencySelect={setToCurrency}
             disabled={currenciesLoading}
+            readOnly
+            showMax={false}
           />
           
           <ExchangeRate
-            rate={rate}
+            previewRate={previewRate}
             fromCurrency={fromCurrency}
             toCurrency={toCurrency}
             isLoading={loading && !!amount}
@@ -144,7 +143,7 @@ export function HomePage() {
           fullWidth
           size="large"
           onClick={handleSubmit}
-          disabled={!fromCurrency || !toCurrency || !amount || !toAddress || !rate || loading}
+          disabled={!fromCurrency || !toCurrency || !amount || !toAddress || !previewRate || loading || !!error}
           loading={loading}
         >
           Создать обмен

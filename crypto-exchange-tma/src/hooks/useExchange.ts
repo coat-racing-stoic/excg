@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { getExchangeRate, createOrder } from '../api';
-import type { Currency, ExchangeRate, Order, PriceRequest, CreateOrderRequest } from '../types';
+import { calculatePreviewRate, createOrder } from '../api';
+import type { Currency, PreviewRate, Order, CreateOrderRequest } from '../types';
 
 interface UseExchangeResult {
   fromCurrency: Currency | null;
@@ -8,7 +8,7 @@ interface UseExchangeResult {
   amount: string;
   toAddress: string;
   exchangeType: 'fixed' | 'float';
-  rate: ExchangeRate | null;
+  previewRate: PreviewRate | null;
   loading: boolean;
   error: string | null;
   setFromCurrency: (currency: Currency | null) => void;
@@ -28,7 +28,7 @@ export function useExchange(): UseExchangeResult {
   const [amount, setAmount] = useState<string>('');
   const [toAddress, setToAddress] = useState<string>('');
   const [exchangeType, setExchangeType] = useState<'fixed' | 'float'>('fixed');
-  const [rate, setRate] = useState<ExchangeRate | null>(null);
+  const [previewRate, setPreviewRate] = useState<PreviewRate | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -36,12 +36,16 @@ export function useExchange(): UseExchangeResult {
     const temp = fromCurrency;
     setFromCurrency(toCurrency);
     setToCurrency(temp);
-    setRate(null);
+    setPreviewRate(null);
   }, [fromCurrency, toCurrency]);
   
+  /**
+   * Предварительный расчёт курса из кэша (первый экран)
+   * Использует публичный эндпоинт /api/rates/pair/{from}/{to}
+   */
   const calculateRate = useCallback(async () => {
     if (!fromCurrency || !toCurrency || !amount || parseFloat(amount) <= 0) {
-      setRate(null);
+      setPreviewRate(null);
       return;
     }
     
@@ -49,32 +53,42 @@ export function useExchange(): UseExchangeResult {
     setError(null);
     
     try {
-      const params: PriceRequest = {
-        type: exchangeType,
-        fromCcy: fromCurrency.code,  // code already contains full identifier (e.g., BTCBTC, USDTARBITRUM)
-        toCcy: toCurrency.code,
-        direction: 'from',
-        amount: parseFloat(amount),
-      };
+      // Используем кэшированные курсы для быстрого предварительного расчёта
+      const preview = await calculatePreviewRate(
+        fromCurrency.code,
+        toCurrency.code,
+        parseFloat(amount),
+        exchangeType
+      );
       
-      const rateData = await getExchangeRate(params);
-      setRate(rateData);
+      setPreviewRate(preview);
       
-      if (rateData.errors && rateData.errors.length > 0) {
-        setError(rateData.errors.join(', '));
+      // Проверка лимитов
+      const amountNum = parseFloat(amount);
+      const minAmount = parseFloat(preview.minAmount.split(' ')[0]);
+      const maxAmount = parseFloat(preview.maxAmount.split(' ')[0]);
+      
+      if (amountNum < minAmount) {
+        setError(`Минимальная сумма: ${preview.minAmount}`);
+      } else if (amountNum > maxAmount) {
+        setError(`Максимальная сумма: ${preview.maxAmount}`);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to calculate rate');
-      // Demo rate calculation
-      setRate(getDemoRate(fromCurrency, toCurrency, amount));
+      setError(err instanceof Error ? err.message : 'Не удалось рассчитать курс');
+      // Fallback демо-расчёт
+      setPreviewRate(getDemoPreviewRate(fromCurrency, toCurrency, amount));
     } finally {
       setLoading(false);
     }
   }, [fromCurrency, toCurrency, amount, exchangeType]);
   
+  /**
+   * Создание ордера
+   * На втором экране будет вызван /api/v2/price для точного расчёта
+   */
   const submitOrder = useCallback(async (): Promise<Order | null> => {
     if (!fromCurrency || !toCurrency || !amount || !toAddress) {
-      setError('Please fill all required fields');
+      setError('Заполните все обязательные поля');
       return null;
     }
     
@@ -84,7 +98,7 @@ export function useExchange(): UseExchangeResult {
     try {
       const params: CreateOrderRequest = {
         type: exchangeType,
-        fromCcy: fromCurrency.code,  // code already contains full identifier
+        fromCcy: fromCurrency.code,
         toCcy: toCurrency.code,
         direction: 'from',
         amount: parseFloat(amount),
@@ -94,8 +108,8 @@ export function useExchange(): UseExchangeResult {
       const order = await createOrder(params);
       return order;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create order');
-      // Return demo order for testing
+      setError(err instanceof Error ? err.message : 'Не удалось создать ордер');
+      // Возвращаем демо-ордер для тестирования
       return getDemoOrder(fromCurrency, toCurrency, amount, toAddress);
     } finally {
       setLoading(false);
@@ -107,7 +121,7 @@ export function useExchange(): UseExchangeResult {
     setToCurrency(null);
     setAmount('');
     setToAddress('');
-    setRate(null);
+    setPreviewRate(null);
     setError(null);
   }, []);
   
@@ -117,7 +131,7 @@ export function useExchange(): UseExchangeResult {
     amount,
     toAddress,
     exchangeType,
-    rate,
+    previewRate,
     loading,
     error,
     setFromCurrency,
@@ -132,14 +146,14 @@ export function useExchange(): UseExchangeResult {
   };
 }
 
-function getDemoRate(from: Currency, to: Currency, amount: string): ExchangeRate {
+function getDemoPreviewRate(from: Currency, to: Currency, amount: string): PreviewRate {
   const rates: Record<string, number> = {
-    'BTC-ETH': 15.5,
-    'ETH-BTC': 0.064,
-    'BTC-USDT': 43000,
-    'USDT-BTC': 0.000023,
-    'ETH-USDT': 2600,
-    'USDT-ETH': 0.00038,
+    'BTC-ETH': 29.0,
+    'ETH-BTC': 0.034,
+    'BTC-USDT': 94000,
+    'USDT-BTC': 0.0000106,
+    'ETH-USDT': 3400,
+    'USDT-ETH': 0.00029,
   };
   
   const key = `${from.code}-${to.code}`;
@@ -147,22 +161,18 @@ function getDemoRate(from: Currency, to: Currency, amount: string): ExchangeRate
   const rateValue = rates[key] || (rates[reverseKey] ? 1 / rates[reverseKey] : 1);
   
   const amountNum = parseFloat(amount);
-  const toAmount = (amountNum * rateValue * 0.98).toFixed(8); // 2% fee
+  const toAmount = (amountNum * rateValue * 0.98).toFixed(8);
   
   return {
-    from: {
-      code: from.code,
-      network: from.network,
-      amount: amount,
-      min: String(from.min || 0.001),
-      max: String(from.max || 10),
-    },
-    to: {
-      code: to.code,
-      network: to.network,
-      amount: toAmount,
-      rate: String(rateValue),
-    },
+    fromCurrency: from.code,
+    toCurrency: to.code,
+    fromAmount: amount,
+    toAmount,
+    rate: rateValue,
+    minAmount: `${from.min || 0.0001} ${from.code}`,
+    maxAmount: `${from.max || 10} ${from.code}`,
+    fee: 'Включена',
+    source: 'cache',
   };
 }
 
@@ -179,12 +189,12 @@ function getDemoOrder(from: Currency, to: Currency, amount: string, toAddress: s
       code: from.code,
       network: from.network,
       amount,
-      address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', // Demo address
+      address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
     },
     to: {
       code: to.code,
       network: to.network,
-      amount: (parseFloat(amount) * 15).toFixed(8),
+      amount: (parseFloat(amount) * 29).toFixed(8),
       address: toAddress,
     },
     time: {
