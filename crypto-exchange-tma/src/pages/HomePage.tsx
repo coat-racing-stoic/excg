@@ -2,8 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout, Button, Input } from '../components';
 import { 
-  CurrencySelector, 
-  AmountInput, 
+  CurrencyInput,
   ExchangeRate, 
   ExchangeTypeToggle 
 } from '../components/exchange';
@@ -90,32 +89,32 @@ export function HomePage() {
         />
         
         <div className="exchange-form">
-          <CurrencySelector
+          <CurrencyInput
             label="Отправляете"
+            amount={amount}
+            onAmountChange={setAmount}
             currencies={sendCurrencies}
-            selected={fromCurrency}
-            onSelect={setFromCurrency}
+            selectedCurrency={fromCurrency}
+            onCurrencySelect={setFromCurrency}
             disabled={currenciesLoading}
-          />
-          
-          <AmountInput
-            value={amount}
-            onChange={setAmount}
-            currency={fromCurrency}
-            label="Сумма"
-            disabled={!fromCurrency}
+            minAmount={previewRate?.minAmount ? parseFloat(previewRate.minAmount) : undefined}
+            maxAmount={previewRate?.maxAmount ? parseFloat(previewRate.maxAmount) : undefined}
           />
           
           <button className="swap-button" onClick={handleSwap}>
             <span className="swap-icon">⇅</span>
           </button>
           
-          <CurrencySelector
+          <CurrencyInput
             label="Получаете"
+            amount={previewRate?.toAmount || ''}
+            onAmountChange={() => {}}
             currencies={receiveCurrencies}
-            selected={toCurrency}
-            onSelect={setToCurrency}
+            selectedCurrency={toCurrency}
+            onCurrencySelect={setToCurrency}
             disabled={currenciesLoading}
+            readOnly
+            showMax={false}
           />
           
           <ExchangeRate

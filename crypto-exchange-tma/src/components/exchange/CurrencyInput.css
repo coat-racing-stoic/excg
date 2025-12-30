@@ -1,0 +1,254 @@
+/* Currency Input - Combined amount + currency selector */
+.currency-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.currency-input--disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.currency-input__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.currency-input__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.currency-input__limits {
+  font-size: 11px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.currency-input__body {
+  display: flex;
+  align-items: center;
+  background: var(--tg-theme-bg-color, #fff);
+  border: 2px solid var(--tg-theme-secondary-bg-color, #e0e0e0);
+  border-radius: 16px;
+  padding: 12px 16px;
+  gap: 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.currency-input__body:focus-within {
+  border-color: var(--tg-theme-button-color, #2481cc);
+  box-shadow: 0 0 0 3px rgba(36, 129, 204, 0.1);
+}
+
+/* Amount section - left side */
+.currency-input__amount-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.currency-input__field {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000);
+  outline: none;
+  font-family: inherit;
+  padding: 0;
+}
+
+.currency-input__field::placeholder {
+  color: var(--tg-theme-hint-color, #ccc);
+}
+
+.currency-input__field:disabled {
+  color: var(--tg-theme-hint-color, #999);
+}
+
+/* Currency section - right side */
+.currency-input__currency-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.currency-input__selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  font-family: inherit;
+}
+
+.currency-input__selector:hover:not(:disabled) {
+  background: var(--tg-theme-hint-color, #e0e0e0);
+}
+
+.currency-input__selector:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.currency-input__selector:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.currency-input__icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tg-theme-bg-color, #fff);
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.currency-input__currency-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.currency-input__code {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000);
+  line-height: 1.2;
+}
+
+.currency-input__network {
+  font-size: 11px;
+  color: var(--tg-theme-hint-color, #999);
+  line-height: 1.2;
+}
+
+.currency-input__placeholder {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.currency-input__chevron {
+  font-size: 10px;
+  color: var(--tg-theme-hint-color, #999);
+  margin-left: 2px;
+}
+
+.currency-input__max {
+  padding: 8px 12px;
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.currency-input__max:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.currency-input__max:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.currency-input__max:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal styles */
+.currency-input__search {
+  margin-bottom: 16px;
+}
+
+.currency-input__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.currency-input__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
+  text-align: left;
+}
+
+.currency-input__item:hover {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+}
+
+.currency-input__item--selected {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+}
+
+.currency-input__item-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.currency-input__item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.currency-input__item-code {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.currency-input__item-name {
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.currency-input__item-network {
+  padding: 4px 8px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.currency-input__empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--tg-theme-hint-color, #999);
+}
